@@ -15,14 +15,14 @@
               class="text-neutral-0 border rounded-circle footer-icon"
               href="#"
             >
-              <Icon class="fs-4" name="bi:line" />
+              <Icon class="fs-6" name="bi:line" />
             </a>
             <a
               class="text-neutral-0 border rounded-circle footer-icon"
               href="#"
               footer-icon
             >
-              <Icon class="p-2 fs-4" name="mdi:instagram" />
+              <Icon class="fs-6" name="mdi:instagram" />
             </a>
           </div>
         </div>

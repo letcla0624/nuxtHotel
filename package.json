@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@nuxt/icon": "^1.7.5",
+    "@nuxtjs/google-fonts": "^3.2.0",
     "@popperjs/core": "^2.11.8",
     "@types/bootstrap": "^5.2.10",
     "bootstrap": "^5.3.3",
@@ -23,6 +24,8 @@
     "vue-router": "latest"
   },
   "devDependencies": {
+    "@iconify-json/bi": "^1.2.1",
+    "@iconify-json/ic": "^1.2.1",
     "@iconify-json/mdi": "^1.2.1",
     "sass": "^1.70.0"
   }

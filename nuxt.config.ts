@@ -3,13 +3,13 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
   // 全域套用的 scss 樣式
-  css: ["@/assets/stylesheets/all.scss"],
+  css: ["@/assets/styles/all.scss"],
   vite: {
     css: {
       preprocessorOptions: {
         scss: {
           // 自定義的 scss 變數樣式，修改 Bootstrap 預設樣式
-          additionalData: `@import "@/assets/stylesheets/_variables.scss";`,
+          additionalData: `@import "@/assets/styles/_variables.scss";`,
         },
       },
     },
@@ -21,10 +21,17 @@ export default defineNuxtConfig({
       linkExactActiveClass: "active",
     },
   },
-  modules: ["@nuxt/icon", "nuxt-swiper"],
+  modules: ["@nuxt/icon", "nuxt-swiper", "@nuxtjs/google-fonts"],
+  googleFonts: {
+    families: {
+      "Noto+Serif+TC": {
+        wght: "200..900",
+      },
+    },
+  },
   icon: {
     serverBundle: {
-      collections: ["mdi"],
+      collections: ["mdi", "ic", "bi"],
     },
   },
 });

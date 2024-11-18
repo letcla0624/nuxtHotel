@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// import { Icon } from "@iconify/vue";
-
 const route = useRoute();
 const transparentBgRoute = ["home", "rooms"];
 
 const isTransparentRoute = computed(() =>
-  transparentBgRoute.includes(route.name)
+  transparentBgRoute.includes(route.name as string)
 );
 
 const isScrolled = ref(false);
@@ -27,8 +25,8 @@ onUnmounted(() => {
   <header
     :class="{
       scrolled: isScrolled,
-      'bg-transparent': isTransparentRoute,
-      'bg-neutral-120': !isTransparentRoute,
+      'bg-transparent': !isScrolled,
+      'bg-neutral-120': isScrolled,
     }"
     class="position-fixed top-0 z-3 w-100"
   >
@@ -63,7 +61,7 @@ onUnmounted(() => {
                   class="nav-link d-flex gap-2 p-4 text-neutral-0"
                   data-bs-toggle="dropdown"
                 >
-                  <Icon class="fs-4" icon="mdi:account-circle-outline" />
+                  <Icon class="fs-4" name="mdi:account-circle-outline" />
                   Jessica
                 </button>
                 <ul
