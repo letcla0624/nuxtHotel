@@ -257,6 +257,7 @@ useSeoMeta({
           :class="{ 'd-none': isEditProfile }"
           class="btn btn-outline-primary-100 align-self-start px-8 py-4 rounded-3"
           type="button"
+          style="--bs-btn-hover-color: #fff"
           @click="isEditProfile = !isEditProfile"
         >
           編輯
