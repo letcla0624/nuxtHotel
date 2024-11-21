@@ -230,9 +230,8 @@ $grid-breakpoints: (
 );
 
 input[type="password"] {
-  @include media-breakpoint-up(md) {
-    min-width: 293.13px;
-  }
+  font: small-caption;
+  font-size: 1.5rem;
 }
 
 input::placeholder {
