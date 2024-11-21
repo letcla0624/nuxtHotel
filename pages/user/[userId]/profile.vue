@@ -10,7 +10,7 @@ const date = new Date();
 const years = date.getFullYear() - 1910;
 
 // seo
-const title = useMetaTitle("註冊會員");
+const title = useMetaTitle("個人資料");
 useSeoMeta({
   title,
 });

@@ -1,9 +1,11 @@
-<script setup>
+<script setup lang="ts">
+import DatePickerModal from "~/components/rooms/DatePickerModal.vue";
+
 const route = useRoute();
-const datePickerModal = ref(null);
+const datePickerModal = ref<InstanceType<typeof DatePickerModal> | null>(null);
 
 const openModal = () => {
-  datePickerModal.value.openModal();
+  datePickerModal.value?.openModal();
 };
 
 const MAX_BOOKING_PEOPLE = 10;
@@ -11,9 +13,10 @@ const bookingPeople = ref(1);
 
 const daysCount = ref(0);
 
-const daysFormatOnMobile = (date) => date?.split("-").slice(1, 3).join(" / ");
+const daysFormatOnMobile = (date: string) =>
+  date?.split("-").slice(1, 3).join(" / ");
 
-const formatDate = (date) => {
+const formatDate = (date: Date) => {
   const offsetToUTC8 = date.getHours() + 8;
   date.setHours(offsetToUTC8);
   return date.toISOString().split("T")[0];
@@ -30,7 +33,7 @@ const bookingDate = reactive({
   maxDate: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)),
 });
 
-const handleDateChange = (bookingInfo) => {
+const handleDateChange = (bookingInfo: any) => {
   const { start, end } = bookingInfo.date;
   bookingDate.date.start = start;
   bookingDate.date.end = end;
