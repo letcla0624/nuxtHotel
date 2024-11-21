@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2024-04-03",
+  compatibilityDate: "2024-11-21",
   devtools: { enabled: true },
   app: {
     head: {
@@ -18,13 +18,6 @@ export default defineNuxtConfig({
           additionalData: `@import "@/assets/styles/_variables.scss";`,
         },
       },
-    },
-  },
-  router: {
-    options: {
-      // 讓 NuxtLink 可以套用 .active 的樣式
-      linkActiveClass: "active",
-      linkExactActiveClass: "active",
     },
   },
   modules: [

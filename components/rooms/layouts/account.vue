@@ -1,7 +1,3 @@
-<script setup>
-const route = useRoute();
-</script>
-
 <template>
   <div class="min-vh-100 bg-neutral-120">
     <header class="position-fixed z-3 w-100 bg-neutral-120">
@@ -9,7 +5,7 @@ const route = useRoute();
         <div class="container-fluid justify-content-between p-0">
           <NuxtLink class="navbar-brand p-0" to="/">
             <img
-              src="/images/logo-white.svg"
+              src="@/assets/images/logo-white.svg"
               alt="logo"
               class="logo img-fluid"
             />
@@ -24,18 +20,18 @@ const route = useRoute();
             aria-label="Toggle navigation"
           >
             <Icon class="fs-1" name="mdi:close" />
-            <Icon class="fs-1" name="mdi:menu" />
+            <Icon class="fs-5" name="mdi:menu" />
           </button>
           <div id="navbar" class="collapse navbar-collapse">
             <ul class="d-md-none navbar-nav gap-4 ms-auto fw-bold">
               <li class="nav-item">
-                <NuxtLink to="/rooms" class="nav-link p-4 text-neutral-0">
+                <NuxtLink to="/" class="nav-link p-4 text-neutral-0">
                   客房旅宿
                 </NuxtLink>
               </li>
               <li class="d-none d-md-block nav-item">
                 <NuxtLink
-                  :to="`/user/${route.params.userId}/profile`"
+                  to="/"
                   class="nav-link d-flex gap-2 p-4 text-neutral-0"
                 >
                   <Icon class="fs-5" name="mdi:account-circle-outline" />
@@ -43,16 +39,13 @@ const route = useRoute();
                 </NuxtLink>
               </li>
               <li class="d-md-none nav-item">
-                <NuxtLink
-                  to="/account/login"
-                  class="nav-link p-4 text-neutral-0"
-                >
+                <NuxtLink to="/" class="nav-link p-4 text-neutral-0">
                   會員登入
                 </NuxtLink>
               </li>
               <li class="nav-item">
                 <NuxtLink
-                  to="/rooms"
+                  to="/"
                   class="btn btn-primary-100 px-8 py-4 text-white fw-bold border-0 rounded-3"
                 >
                   立即訂房
@@ -67,7 +60,7 @@ const route = useRoute();
       <img
         class="d-none d-md-block position-relative z-1 min-vh-100 object-fit-cover"
         style="max-width: 50%"
-        src="/images/login-hero.png"
+        src="@/assets/images/login-hero.png"
         alt="login-hero"
       />
 
@@ -76,12 +69,12 @@ const route = useRoute();
       >
         <picture class="w-100">
           <source
-            srcset="/images/deco-line-group-horizontal.svg"
+            srcset="@/assets/images/deco-line-group-horizontal.svg"
             media="(min-width: 576px)"
           />
           <img
             class="deco-line-group"
-            src="/images/deco-line-group-horizontal-sm.svg"
+            src="@/assets/images/deco-line-group-horizontal-sm.svg"
             alt="deco-line-group"
           />
         </picture>
@@ -94,8 +87,10 @@ const route = useRoute();
   </div>
 </template>
 
+<script setup></script>
+
 <style lang="scss" scoped>
-@import "bootstrap/scss/mixins/breakpoints";
+@import 'bootstrap/scss/mixins/breakpoints';
 
 $grid-breakpoints: (
   xs: 0,
@@ -121,31 +116,35 @@ $grid-breakpoints: (
   header {
     max-height: 72px;
   }
+}
 
+@include media-breakpoint-down(md) {
   .navbar-toggler {
     z-index: 1;
     visibility: hidden;
 
-    .iconify {
+    svg {
       transition: opacity 0.3s;
     }
 
-    .iconify:nth-child(1) {
+    svg:nth-child(1) {
       position: absolute;
+      top: 28px;
+      right: 28px;
       opacity: 1;
       visibility: visible;
     }
-    .iconify:nth-child(2) {
+    svg:nth-child(2) {
       opacity: 0;
       visibility: hidden;
     }
   }
   .navbar-toggler.collapsed {
-    .iconify:nth-child(1) {
+    svg:nth-child(1) {
       opacity: 0;
       visibility: hidden;
     }
-    .iconify:nth-child(2) {
+    svg:nth-child(2) {
       opacity: 1;
       visibility: visible;
     }
