@@ -70,7 +70,7 @@ onUnmounted(() => {
                 >
                   <li>
                     <NuxtLink
-                      :to="`/user/6533f0ef4cdf5b7f762747b0/profile`"
+                      :to="`/user/${route.params.userId}/profile`"
                       class="dropdown-item px-6 py-4"
                     >
                       我的帳戶
