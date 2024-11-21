@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
+import type { Modal } from "bootstrap";
 import { useScreens } from "vue-screen-utils";
 
-const modal = ref(null);
+const modal = ref<InstanceType<typeof Modal> | null>(null);
 // 使用 plugins
 const { $bootstrap } = useNuxtApp();
 
@@ -10,11 +11,11 @@ onMounted(() => {
 });
 
 const openModal = () => {
-  modal.value.show();
+  modal.value?.show();
 };
 
 const closeModal = () => {
-  modal.value.hide();
+  modal.value?.hide();
 };
 
 defineExpose({
@@ -55,7 +56,7 @@ const columns = mapCurrent({ md: 2 }, 1);
 const expanded = mapCurrent({ md: false }, true);
 const titlePosition = mapCurrent({ md: "center" }, "left");
 
-const formatDateTitle = (date) => date?.replaceAll("-", " / ");
+const formatDateTitle = (date: string) => date?.replaceAll("-", " / ");
 
 const daysCount = computed(() => {
   const startDate = tempDate.date.start;

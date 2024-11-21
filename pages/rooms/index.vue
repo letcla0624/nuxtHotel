@@ -31,6 +31,12 @@ const roomImages = computed(() => {
 
   return result;
 });
+
+// seo
+const title = useMetaTitle("客房旅宿");
+useSeoMeta({
+  title,
+});
 </script>
 
 <template>

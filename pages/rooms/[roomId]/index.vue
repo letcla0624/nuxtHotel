@@ -38,6 +38,12 @@ const handleDateChange = (bookingInfo) => {
   bookingPeople.value = bookingInfo?.people || 1;
   daysCount.value = bookingInfo.daysCount;
 };
+
+// seo
+const title = useMetaTitle("房型詳細");
+useSeoMeta({
+  title,
+});
 </script>
 
 <template>
