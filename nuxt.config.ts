@@ -2,6 +2,12 @@
 export default defineNuxtConfig({
   compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
+  app: {
+    head: {
+      // 要改變的內容
+      title: "享樂酒店｜Enjoyment Luxury Hotel",
+    },
+  },
   // 全域套用的 scss 樣式
   css: ["@/assets/styles/all.scss"],
   vite: {
