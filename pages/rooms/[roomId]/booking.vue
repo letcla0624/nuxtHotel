@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>room detail</div>
+  <div>booking</div>
 </template>
 
 <style lang="scss" scoped></style>

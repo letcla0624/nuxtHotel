@@ -16,6 +16,7 @@
     "@nuxt/icon": "^1.7.5",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@popperjs/core": "^2.11.8",
+    "@samk-dev/nuxt-vcalendar": "^1.0.4",
     "@types/bootstrap": "^5.2.10",
     "bootstrap": "^5.3.3",
     "nuxt": "^3.14.159",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
-const transparentBgRoute = ["home", "rooms"];
+const transparentBgRoute = ["index", "rooms"];
 
 const isTransparentRoute = computed(() =>
   transparentBgRoute.includes(route.name as string)
@@ -25,8 +25,8 @@ onUnmounted(() => {
   <header
     :class="{
       scrolled: isScrolled,
-      'bg-transparent': !isScrolled,
-      'bg-neutral-120': isScrolled,
+      'bg-transparent': isTransparentRoute,
+      'bg-neutral-120': !isTransparentRoute,
     }"
     class="position-fixed top-0 z-3 w-100"
   >

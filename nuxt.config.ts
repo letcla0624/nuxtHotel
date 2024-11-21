@@ -27,7 +27,12 @@ export default defineNuxtConfig({
       linkExactActiveClass: "active",
     },
   },
-  modules: ["@nuxt/icon", "nuxt-swiper", "@nuxtjs/google-fonts"],
+  modules: [
+    "@nuxt/icon",
+    "nuxt-swiper",
+    "@nuxtjs/google-fonts",
+    "@samk-dev/nuxt-vcalendar",
+  ],
   googleFonts: {
     families: {
       "Noto+Serif+TC": {
