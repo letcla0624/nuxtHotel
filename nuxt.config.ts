@@ -3,8 +3,8 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-21",
   devtools: { enabled: true },
   app: {
+    // 全域的 meta 內容
     head: {
-      // 要改變的內容
       title: "享樂酒店｜Enjoyment Luxury Hotel",
     },
   },
