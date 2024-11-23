@@ -62,9 +62,9 @@ useSeoMeta({
             :class="{ 'd-none': !isEditPassword }"
           >
             <div>
-              <label for="oldPassword" class="form-label fs-8 fs-md-7 fw-bold"
-                >舊密碼</label
-              >
+              <label for="oldPassword" class="form-label fs-8 fs-md-7 fw-bold">
+                舊密碼
+              </label>
               <input
                 id="oldPassword"
                 type="password"
@@ -74,9 +74,9 @@ useSeoMeta({
             </div>
 
             <div>
-              <label for="newPassword" class="form-label fs-8 fs-md-7 fw-bold"
-                >新密碼</label
-              >
+              <label for="newPassword" class="form-label fs-8 fs-md-7 fw-bold">
+                新密碼
+              </label>
               <input
                 id="newPassword"
                 type="password"
@@ -89,8 +89,9 @@ useSeoMeta({
               <label
                 for="confirmPassword"
                 class="form-label fs-8 fs-md-7 fw-bold"
-                >確認新密碼</label
               >
+                確認新密碼
+              </label>
               <input
                 id="confirmPassword"
                 type="password"

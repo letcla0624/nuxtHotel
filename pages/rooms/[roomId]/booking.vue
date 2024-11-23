@@ -146,7 +146,7 @@ useSeoMeta({
                   <label for="address" class="form-label fs-8 fs-md-7 fw-bold"
                     >地址</label
                   >
-                  <div className="d-flex gap-2 mb-4">
+                  <div class="d-flex gap-2 mb-4">
                     <select
                       class="form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
                     >
@@ -445,7 +445,7 @@ useSeoMeta({
               />
 
               <div>
-                <h2 className="mb-6 text-neutral-100 fs-6 fs-md-4 fw-bold">
+                <h2 class="mb-6 text-neutral-100 fs-6 fs-md-4 fw-bold">
                   價格詳情
                 </h2>
                 <div

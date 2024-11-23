@@ -1,6 +1,4 @@
-<script setup lang="ts">
-// import { Icon } from "@iconify/vue";
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <footer class="py-20 pb-md-30 bg-neutral-120">
@@ -11,59 +9,62 @@
         <div>
           <img class="mb-10" src="/images/logo-white.svg" alt="logo" />
           <div class="d-flex align-items-center gap-4">
-            <a
+            <NuxtLink
               class="text-neutral-0 border rounded-circle footer-icon"
-              href="#"
+              to="/"
             >
               <Icon class="fs-6" name="bi:line" />
-            </a>
-            <a
+            </NuxtLink>
+            <NuxtLink
               class="text-neutral-0 border rounded-circle footer-icon"
-              href="#"
-              footer-icon
+              to="/"
             >
               <Icon class="fs-6" name="mdi:instagram" />
-            </a>
+            </NuxtLink>
           </div>
         </div>
         <div class="d-flex flex-column flex-md-row gap-4 gap-md-20">
           <address class="d-flex flex-column mb-0">
             <p class="mb-4 mb-md-10 fw-bold text-neutral-0">
               TEL
-              <a
+              <NuxtLink
                 class="d-block mt-2 text-neutral-40 fs-8 fs-md-7 fw-normal text-decoration-none"
-                href="tel:+886-7-1234567"
-                >+886-7-1234567</a
+                to="tel:+886-7-1234567"
               >
+                +886-7-1234567
+              </NuxtLink>
             </p>
 
             <p class="mb-0 fw-bold text-neutral-0">
               FAX
-              <a
+              <NuxtLink
                 class="d-block mt-2 text-neutral-40 fs-8 fs-md-7 fw-normal text-decoration-none"
-                href="fax:+886-7-1234567"
-                >+886-7-1234567</a
+                to="fax:+886-7-1234567"
               >
+                +886-7-1234567
+              </NuxtLink>
             </p>
           </address>
           <address class="d-flex flex-column mb-0">
             <p class="mb-4 mb-md-10 fw-bold text-neutral-0">
               MAIL
-              <a
+              <NuxtLink
                 class="d-block mt-2 text-neutral-40 fs-8 fs-md-7 fw-normal text-decoration-none"
-                href="mailto:elh@hexschool.com"
-                >elh@hexschool.com</a
+                to="mailto:elh@hexschool.com"
               >
+                elh@hexschool.com
+              </NuxtLink>
             </p>
 
             <p class="mb-0 fw-bold text-neutral-0">
               WEB
-              <a
+              <NuxtLink
                 class="d-block mt-2 text-neutral-40 fs-8 fs-md-7 fw-normal text-decoration-none"
-                href="https://www.elhhexschool.com.tw/"
+                to="https://www.elhhexschool.com.tw/"
                 target="_blank"
-                >www.elhhexschool.com.tw</a
               >
+                www.elhhexschool.com.tw
+              </NuxtLink>
             </p>
           </address>
         </div>

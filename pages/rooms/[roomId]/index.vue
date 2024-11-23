@@ -418,7 +418,8 @@ useSeoMeta({
                       class="text-neutral-80 fw-medium"
                       style="top: 8px; left: 8px"
                       for="checkinInput"
-                      >入住
+                    >
+                      入住
                     </label>
                   </div>
 
@@ -437,7 +438,8 @@ useSeoMeta({
                       class="text-neutral-80 fw-medium"
                       style="top: 8px; left: 8px"
                       for="checkoutInput"
-                      >退房
+                    >
+                      退房
                     </label>
                   </div>
                 </div>
@@ -515,13 +517,13 @@ useSeoMeta({
 
         <template v-else>
           <div class="d-flex flex-column gap-1">
-            <small class="text-neutral-80 fw-medium"
-              >ＮＴ$ 10,000 / {{ daysCount }} 晚 / {{ bookingPeople }} 人</small
-            >
-            <span class="text-neutral fs-9 fw-medium text-decoration-underline"
-              >{{ daysFormatOnMobile(bookingDate.date?.start) }} -
-              {{ daysFormatOnMobile(bookingDate.date?.end) }}</span
-            >
+            <small class="text-neutral-80 fw-medium">
+              ＮＴ$ 10,000 / {{ daysCount }} 晚 / {{ bookingPeople }} 人
+            </small>
+            <span class="text-neutral fs-9 fw-medium text-decoration-underline">
+              {{ daysFormatOnMobile(bookingDate.date?.start) }} -
+              {{ daysFormatOnMobile(bookingDate.date?.end) }}
+            </span>
           </div>
           <NuxtLink
             :to="`/rooms/${route.params.roomId}/booking`"
@@ -533,7 +535,7 @@ useSeoMeta({
       </div>
     </section>
 
-    <RoomsDatePickerModal
+    <DatePickerModal
       ref="datePickerModal"
       :date-time="bookingDate"
       @handle-date-change="handleDateChange"

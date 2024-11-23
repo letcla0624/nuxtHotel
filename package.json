@@ -16,10 +16,8 @@
     "@nuxt/icon": "^1.7.5",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@popperjs/core": "^2.11.8",
-    "@samk-dev/nuxt-vcalendar": "^1.0.4",
-    "@types/bootstrap": "^5.2.10",
     "bootstrap": "^5.3.3",
-    "nuxt": "^3.14.159",
+    "nuxt": "^3.14.1592",
     "nuxt-swiper": "^1.2.2",
     "vue": "latest",
     "vue-router": "latest",
@@ -27,8 +25,12 @@
   },
   "devDependencies": {
     "@iconify-json/bi": "^1.2.1",
+    "@iconify-json/fluent": "^1.2.7",
     "@iconify-json/ic": "^1.2.1",
+    "@iconify-json/material-symbols": "^1.2.6",
     "@iconify-json/mdi": "^1.2.1",
-    "sass": "^1.70.0"
+    "@samk-dev/nuxt-vcalendar": "^1.0.4",
+    "@types/bootstrap": "^5.2.10",
+    "sass": "^1.77.6"
   }
 }

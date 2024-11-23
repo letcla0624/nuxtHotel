@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2024-11-21",
+  compatibilityDate: "2024-04-03",
   devtools: { enabled: true },
   app: {
     // 全域的 meta 內容
@@ -35,7 +35,7 @@ export default defineNuxtConfig({
   },
   icon: {
     serverBundle: {
-      collections: ["mdi", "ic", "bi"],
+      collections: ["mdi", "ic", "bi", "material-symbols", "fluent"],
     },
   },
 });
