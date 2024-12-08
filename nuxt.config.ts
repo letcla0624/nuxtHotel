@@ -11,6 +11,9 @@ export default defineNuxtConfig({
   // 全域套用的 scss 樣式
   css: ["@/assets/styles/all.scss"],
   vite: {
+    define: {
+      "process.env": process.env,
+    },
     css: {
       preprocessorOptions: {
         scss: {
