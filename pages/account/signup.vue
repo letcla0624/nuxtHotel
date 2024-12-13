@@ -1,12 +1,110 @@
 <script setup lang="ts">
+import { signup } from "~/api/auth";
+import ZipCodeMap from "~/data/zipCodeMap";
+
 definePageMeta({
   layout: "account-layout",
 });
 
+const router = useRouter();
+const { sweetAlert } = useSweetAlert();
 const isEmailAndPasswordValid = ref(false);
 
 const date = new Date();
 const years = date.getFullYear() - 1910;
+
+// 表單初始
+const signupFirstForm = ref({
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
+const signupSecondForm = ref({
+  name: "",
+  phone: "",
+  userYear: "1911 年",
+  userMonth: "01 月",
+  userDay: "01 日",
+  detail: "",
+});
+
+// 出生年
+const changeYear = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  signupSecondForm.value.userYear = selectedOption.value;
+};
+
+// 出生月
+const changeMonth = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  signupSecondForm.value.userMonth = selectedOption.value;
+};
+
+// 出生日
+const changeDay = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  signupSecondForm.value.userDay = selectedOption.value;
+};
+
+// 初始化台灣縣市二級選單 plugin tw-city-selector
+const selectedCounty = ref("");
+const selectedDistrict = ref("");
+
+onMounted(() => {
+  const { $twCitySelector } = useNuxtApp();
+  new $twCitySelector({
+    el: ".city-selector-set",
+    standardWords: true,
+    elCounty: ".county",
+    elDistrict: ".district",
+    elZipcode: ".zipcode",
+    hasZipcode: true,
+    hiddenZipcode: true,
+  });
+});
+
+const onSubmitFirst = (data: any) => {
+  signupFirstForm.value = data;
+};
+const onSubmitSecond = async (data: any) => {
+  signupSecondForm.value = data;
+
+  const zipCode = ZipCodeMap.find(
+    (item) =>
+      item.city === selectedCounty.value &&
+      item.county === selectedDistrict.value
+  )?.zipcode;
+
+  const body = {
+    email: signupFirstForm.value.email,
+    password: signupFirstForm.value.password,
+    name: signupSecondForm.value.name,
+    phone: signupSecondForm.value.phone,
+    birthday: `${signupSecondForm.value.userYear.slice(
+      0,
+      4
+    )}/${signupSecondForm.value.userMonth.slice(
+      0,
+      2
+    )}/${signupSecondForm.value.userDay.slice(0, 2)}`,
+    address: {
+      zipcode: `${zipCode}`,
+      detail: signupSecondForm.value.detail,
+    },
+  };
+
+  try {
+    await signup(body);
+    sweetAlert("success", "註冊成功！");
+    router.push("/account/login");
+  } catch (error: any) {
+    sweetAlert("error", "註冊失敗！", `${error.response._data.message}`);
+    console.error(error);
+  }
+};
 
 // seo
 const title = useMetaTitle("註冊會員");
@@ -62,94 +160,183 @@ useSeoMeta({
     </div>
 
     <div class="mb-4">
-      <form :class="{ 'd-none': isEmailAndPasswordValid }" class="mb-4">
+      <VeeForm
+        v-slot="{ errors }"
+        :class="{ 'd-none': isEmailAndPasswordValid }"
+        class="mb-4"
+        @submit="onSubmitFirst"
+      >
         <div class="mb-4 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="email">
             電子信箱
           </label>
-          <input
+          <VeeField
             id="email"
-            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
-            placeholder="hello@exsample.com"
+            name="email"
             type="email"
+            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
+            :class="{ 'is-invalid': errors['email'] }"
+            placeholder="請輸入電子信箱"
+            rules="required|email"
+            v-model="signupFirstForm.email"
           />
+          <VeeErrorMessage class="invalid-feedback" name="email" />
         </div>
         <div class="mb-4 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="password">
             密碼
           </label>
-          <input
+          <VeeField
             id="password"
-            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
-            placeholder="請輸入密碼"
+            name="password"
             type="password"
+            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
+            :class="{ 'is-invalid': errors['password'] }"
+            placeholder="請輸入 8 碼以上英數密碼"
+            rules="required|min:8"
+            v-model="signupFirstForm.password"
           />
+          <VeeErrorMessage class="invalid-feedback" name="password" />
         </div>
         <div class="mb-10 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="confirmPassword">
             確認密碼
           </label>
-          <input
+          <VeeField
             id="confirmPassword"
-            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
-            placeholder="請再輸入一次密碼"
+            name="confirmPassword"
             type="password"
+            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
+            :class="{ 'is-invalid': errors['confirmPassword'] }"
+            placeholder="請再輸入一次新密碼"
+            rules="required|min:8|passwordMatch:@password"
+            v-model="signupFirstForm.confirmPassword"
           />
+          <VeeErrorMessage class="invalid-feedback" name="confirmPassword" />
         </div>
         <button
-          class="btn btn-neutral-40 w-100 py-4 text-neutral-60 fw-bold"
-          type="button"
+          class="btn btn-primary-100 w-100 py-4 text-white fw-bold"
+          :class="{
+            disabled:
+              signupFirstForm.email === '' ||
+              signupFirstForm.password === '' ||
+              signupFirstForm.confirmPassword === '',
+          }"
+          type="submit"
           @click="isEmailAndPasswordValid = true"
         >
           下一步
         </button>
-      </form>
-      <form :class="{ 'd-none': !isEmailAndPasswordValid }" class="mb-4">
+      </VeeForm>
+      <VeeForm
+        v-slot="{ errors }"
+        :class="{ 'd-none': !isEmailAndPasswordValid }"
+        class="mb-4"
+        @submit="onSubmitSecond"
+      >
         <div class="mb-4 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="name"> 姓名 </label>
-          <input
+          <VeeField
             id="name"
-            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40 rounded-3"
-            placeholder="請輸入姓名"
+            name="name"
             type="text"
+            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40 rounded-3"
+            :class="{
+              'is-invalid': errors['name'],
+            }"
+            placeholder="請輸入姓名"
+            rules="required|min:2"
+            :value="signupSecondForm?.name"
           />
+          <VeeErrorMessage class="invalid-feedback" name="name" />
         </div>
         <div class="mb-4 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="phone">
             手機號碼
           </label>
-          <input
+          <VeeField
             id="phone"
-            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40 rounded-3"
-            placeholder="請輸入手機號碼"
+            name="phone"
             type="tel"
+            class="form-control p-4 text-neutral-100 fw-medium border-neutral-40 rounded-3"
+            :class="{
+              'is-invalid': errors['phone'],
+            }"
+            placeholder="請輸入手機號碼"
+            rules="required|isPhone"
+            :value="signupSecondForm?.phone"
           />
+          <VeeErrorMessage class="invalid-feedback" name="phone" />
         </div>
         <div class="mb-4 fs-8 fs-md-7">
           <label class="mb-2 text-neutral-0 fw-bold" for="birth"> 生日 </label>
           <div class="d-flex gap-2">
-            <select
-              id="birth"
-              class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-            >
-              <option
-                v-for="year in years"
-                :key="year"
-                value="`${year + 1910} 年`"
+            <div class="w-50">
+              <VeeField
+                as="select"
+                name="userYear"
+                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                :class="{
+                  'is-invalid': errors['userYear'],
+                }"
+                rules="required"
+                :value="signupSecondForm.userYear"
+                @change="changeYear"
               >
-                {{ year + 1910 }} 年
-              </option>
-            </select>
-            <select class="form-select p-4 text-neutral-80 fw-medium rounded-3">
-              <option v-for="month in 12" :key="month" value="`${month} 月`">
-                {{ month }} 月
-              </option>
-            </select>
-            <select class="form-select p-4 text-neutral-80 fw-medium rounded-3">
-              <option v-for="day in 30" :key="day" value="`${day} 日`">
-                {{ day }} 日
-              </option>
-            </select>
+                <option
+                  v-for="year in years"
+                  :key="year"
+                  :value="`${year + 1910} 年`"
+                >
+                  {{ year + 1910 }} 年
+                </option>
+              </VeeField>
+              <VeeErrorMessage class="invalid-feedback" name="userYear" />
+            </div>
+            <div class="w-50">
+              <VeeField
+                as="select"
+                name="userMonth"
+                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                :class="{
+                  'is-invalid': errors['userMonth'],
+                }"
+                rules="required"
+                :value="signupSecondForm.userMonth"
+                @change="changeMonth"
+              >
+                <option
+                  v-for="month in 12"
+                  :key="month"
+                  :value="`${month < 10 ? `0${month}` : month} 月`"
+                >
+                  {{ month < 10 ? `0${month}` : month }} 月
+                </option>
+              </VeeField>
+              <VeeErrorMessage class="invalid-feedback" name="userMonth" />
+            </div>
+            <div class="w-50">
+              <VeeField
+                as="select"
+                name="userDay"
+                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                :class="{
+                  'is-invalid': errors['userDay'],
+                }"
+                rules="required"
+                :value="signupSecondForm.userDay"
+                @change="changeDay"
+              >
+                <option
+                  v-for="day in 31"
+                  :key="day"
+                  :value="`${day < 10 ? `0${day}` : day} 日`"
+                >
+                  {{ day < 10 ? `0${day}` : day }} 日
+                </option>
+              </VeeField>
+              <VeeErrorMessage class="invalid-feedback" name="userDay" />
+            </div>
           </div>
         </div>
         <div class="mb-4 fs-8 fs-md-7">
@@ -157,28 +344,42 @@ useSeoMeta({
             地址
           </label>
           <div>
-            <div class="d-flex gap-2 mb-2">
-              <select
-                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-              >
-                <option value="臺北市">臺北市</option>
-                <option value="臺中市">臺中市</option>
-                <option selected value="高雄市">高雄市</option>
-              </select>
-              <select
-                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-              >
-                <option value="前金區">前金區</option>
-                <option value="鹽埕區">鹽埕區</option>
-                <option selected value="新興區">新興區</option>
-              </select>
+            <div class="city-selector-set d-flex gap-2 mb-4">
+              <div class="w-50">
+                <select
+                  id="county"
+                  class="county form-select p-4 text-neutral-80 fw-medium rounded-3"
+                  v-model="selectedCounty"
+                />
+              </div>
+              <div class="w-50">
+                <select
+                  id="district"
+                  class="district form-select p-4 text-neutral-80 fw-medium rounded-3"
+                  v-model="selectedDistrict"
+                />
+              </div>
+              <input
+                id="zipcode"
+                class="zipcode form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3 d-none"
+                type="text"
+                placeholder="郵遞區號"
+                readOnly
+              />
             </div>
-            <input
-              id="address"
+            <VeeField
+              id="detail"
+              name="detail"
               type="text"
               class="form-control p-4 rounded-3"
+              :class="{
+                'is-invalid': errors['detail'],
+              }"
               placeholder="請輸入詳細地址"
+              rules="required"
+              :value="signupSecondForm.detail"
             />
+            <VeeErrorMessage class="invalid-feedback" name="detail" />
           </div>
         </div>
 
@@ -197,11 +398,11 @@ useSeoMeta({
         </div>
         <button
           class="btn btn-primary-100 w-100 py-4 text-neutral-0 fw-bold"
-          type="button"
+          type="submit"
         >
           完成註冊
         </button>
-      </form>
+      </VeeForm>
     </div>
 
     <p class="mb-0 fs-8 fs-md-7">

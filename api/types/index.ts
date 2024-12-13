@@ -1,3 +1,12 @@
+export interface Signup {
+  email: string;
+  password: string;
+  name: string;
+  phone: string;
+  birthday: string;
+  address: Address;
+}
+
 // 登入
 export interface Login {
   email: string;

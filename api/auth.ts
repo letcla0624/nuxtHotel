@@ -1,4 +1,4 @@
-import type { Login } from "./types";
+import type { GetResult, Login, Signup } from "./types";
 
 interface LoginRoot {
   status: boolean;
@@ -40,4 +40,19 @@ export async function login(body: Login) {
   });
 
   return { result, status, token };
+}
+
+// 註冊
+export async function signup(body: Signup) {
+  const { result, status } = await $fetch<GetResult<Signup>>("/user/signup", {
+    method: "POST",
+    baseURL,
+    body,
+    onResponseError({ response }) {
+      const { message } = response._data;
+      console.error("Error:", message);
+    },
+  });
+
+  return { result, status };
 }

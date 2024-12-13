@@ -318,8 +318,8 @@ useSeoMeta({
             <button
               :class="{
                 disabled:
-                  passwordForm.oldPassword === '' &&
-                  passwordForm.newPassword === '' &&
+                  passwordForm.oldPassword === '' ||
+                  passwordForm.newPassword === '' ||
                   passwordForm.confirmPassword === '',
               }"
               class="btn btn-primary-100 align-self-md-start px-8 py-4 text-white rounded-3"

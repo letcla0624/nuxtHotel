@@ -95,7 +95,7 @@ useSeoMeta({
           type="password"
           class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
           :class="{ 'is-invalid': errors['password'] }"
-          placeholder="請輸入 8 碼以上密碼"
+          placeholder="請輸入 8 碼以上英數密碼"
           rules="required|min:8"
           v-model="loginForm.password"
         />
