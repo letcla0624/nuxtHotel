@@ -1,3 +1,10 @@
+// 登入
+export interface Login {
+  email: string;
+  password: string;
+}
+
+// 取得大部分的結構
 export interface GetResult<T> {
   status: boolean;
   result: T;
@@ -14,6 +21,7 @@ export interface Result {
   smallImage: string;
 }
 
+// 房型
 export interface RoomResult {
   _id: string;
   name: string;
@@ -37,4 +45,34 @@ export interface RoomResult {
 interface Info {
   title: string;
   isProvide: boolean;
+}
+
+// 訂單
+export interface Order {
+  roomId?: RoomResult;
+  checkInDate: string;
+  checkOutDate: string;
+  peopleNum: number;
+  userInfo: UserInfo;
+  orderUserId?: string;
+  status?: number;
+  _id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UserInfo {
+  address: Address;
+  name: string;
+  phone: string;
+  email: string;
+  _id?: string;
+  birthday?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface Address {
+  zipcode: string;
+  detail: string;
 }

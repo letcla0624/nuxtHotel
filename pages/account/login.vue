@@ -1,7 +1,58 @@
 <script setup lang="ts">
+import type { FormContext } from "vee-validate";
+import { login } from "~/api/auth";
+import type { Login } from "~/api/types";
+
 definePageMeta({
   layout: "account-layout",
+  middleware: (to, from) => {
+    to.query.from = from.fullPath;
+  },
 });
+
+const route = useRoute();
+const router = useRouter();
+const isDisabled = ref(false);
+
+// 使用 composable
+const { sweetAlert } = useSweetAlert();
+
+const loginForm = ref({
+  email: "",
+  password: "",
+});
+
+// 登入
+const onSubmit = async (
+  body: any,
+  { resetForm }: Pick<FormContext<Login>, "resetForm">
+) => {
+  try {
+    isDisabled.value = true;
+    const res = await login(body);
+
+    // 將 token 寫入 cookie
+    const authCookie = useCookie("auth", {
+      path: "/",
+    });
+    authCookie.value = res.token;
+
+    // sweetAlert2 顯示訊息
+    sweetAlert("success", "登入成功");
+    // 完成後清空
+    resetForm();
+    // 重新導向
+    route.query.from === "/account/signup" ||
+    route.query.from === "/account/login"
+      ? router.push("/")
+      : router.go(-1);
+  } catch (error: any) {
+    sweetAlert("error", "登入失敗", error.response._data.message);
+    console.error(error);
+  } finally {
+    isDisabled.value = false;
+  }
+};
 
 // seo
 const title = useMetaTitle("會員登入");
@@ -19,39 +70,42 @@ useSeoMeta({
       <h1 class="text-neutral-0 fw-bold">立即開始旅程</h1>
     </div>
 
-    <form class="mb-10">
+    <VeeForm v-slot="{ errors }" class="mb-10" @submit="onSubmit">
       <div class="mb-4 fs-8 fs-md-7">
         <label class="mb-2 text-neutral-0 fw-bold" for="email">
           電子信箱
         </label>
-        <input
+        <VeeField
           id="email"
-          class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
-          value="jessica@sample.com"
-          placeholder="請輸入信箱"
+          name="email"
           type="email"
+          class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
+          :class="{ 'is-invalid': errors['email'] }"
+          placeholder="請輸入電子信箱"
+          rules="required|email"
+          v-model="loginForm.email"
         />
+        <VeeErrorMessage class="invalid-feedback" name="email" />
       </div>
       <div class="mb-4 fs-8 fs-md-7">
         <label class="mb-2 text-neutral-0 fw-bold" for="password"> 密碼 </label>
-        <input
+        <VeeField
           id="password"
-          class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
-          value="jessica@sample.com"
-          placeholder="請輸入密碼"
+          name="password"
           type="password"
+          class="form-control p-4 text-neutral-100 fw-medium border-neutral-40"
+          :class="{ 'is-invalid': errors['password'] }"
+          placeholder="請輸入 8 碼以上密碼"
+          rules="required|min:8"
+          v-model="loginForm.password"
         />
+        <VeeErrorMessage class="invalid-feedback" name="password" />
       </div>
       <div
         class="d-flex justify-content-between align-items-center mb-10 fs-8 fs-md-7"
       >
         <div class="form-check d-flex align-items-end gap-2 text-neutral-0">
-          <input
-            id="remember"
-            class="form-check-input"
-            type="checkbox"
-            value=""
-          />
+          <input id="remember" class="form-check-input" type="checkbox" />
           <label class="form-check-label fw-bold" for="remember">
             記住帳號
           </label>
@@ -65,11 +119,12 @@ useSeoMeta({
       </div>
       <button
         class="btn btn-primary-100 w-100 py-4 text-neutral-0 fw-bold"
-        type="button"
+        type="submit"
+        :disabled="isDisabled"
       >
         會員登入
       </button>
-    </form>
+    </VeeForm>
 
     <p class="mb-0 fs-8 fs-md-7">
       <span class="me-2 text-neutral-0 fw-medium">沒有會員嗎？</span>
@@ -96,10 +151,10 @@ $grid-breakpoints: (
   xxxl: 1537px,
 );
 
-input[type="password"] {
-  font: small-caption;
-  font-size: 1.5rem;
-}
+// input[type="password"] {
+//   font: small-caption;
+//   font-size: 1.5rem;
+// }
 
 input::placeholder {
   color: #909090;

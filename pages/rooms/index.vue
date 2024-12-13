@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { getRooms } from "~/api/rooms";
-import { heroList } from "~/data/Hero";
+import { heroList } from "~/data/heroList";
 
 const modules = ref([Autoplay, Navigation, Pagination]);
 const roomSwiper = ref<any | null>(null);

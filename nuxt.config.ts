@@ -28,6 +28,20 @@ export default defineNuxtConfig({
     "nuxt-swiper",
     "@nuxtjs/google-fonts",
     "@samk-dev/nuxt-vcalendar",
+    "@pinia/nuxt",
+    "@vueuse/nuxt",
+    [
+      "@vee-validate/nuxt",
+      {
+        autoImports: true,
+        componentNames: {
+          Form: "VeeForm",
+          Field: "VeeField",
+          FieldArray: "VeeFieldArray",
+          ErrorMessage: "VeeErrorMessage",
+        },
+      },
+    ],
   ],
   googleFonts: {
     families: {

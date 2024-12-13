@@ -72,7 +72,7 @@ const daysCount = computed(() => {
   return differenceDay;
 });
 
-const MAX_BOOKING_PEOPLE = 10;
+const MAX_BOOKING_PEOPLE = 4;
 const bookingPeopleMobile = ref(1);
 
 const isConfirmDateOnMobile = ref(false);

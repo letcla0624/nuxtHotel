@@ -1,4 +1,31 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import type { GetResult, UserInfo } from "~/api/types";
+
+// 取得用戶
+const authCookie = useCookie("auth");
+const username = ref("");
+
+if (authCookie.value) {
+  const baseURL = process.env.BASE_URL;
+  const { data: user } = await useFetch<GetResult<UserInfo>>(`/user/`, {
+    method: "GET",
+    baseURL,
+    headers: {
+      Authorization: authCookie.value!,
+    },
+    onResponseError({ response }) {
+      authCookie.value = null; // 清除 token
+      console.error(response._data.message);
+    },
+  });
+
+  // 取得用戶名稱
+  if (user.value?.result.name) {
+    const spiltName = user.value?.result.name.split(" ");
+    username.value = spiltName[0];
+  }
+}
+</script>
 
 <template>
   <NuxtLayout name="default">
@@ -21,7 +48,7 @@
             class="hero-content d-flex flex-column flex-md-row justify-content-center justify-content-md-start align-items-md-center gap-4 gap-md-6 mx-5 my-10 mx-md-0 my-md-0"
           >
             <img class="avatar" src="/images/avatar-6.png" alt="avatar" />
-            <h1 class="text-neutral-0 fw-bold">Hello，Jessica</h1>
+            <h1 class="text-neutral-0 fw-bold">Hello，{{ username }}</h1>
           </div>
         </div>
       </section>

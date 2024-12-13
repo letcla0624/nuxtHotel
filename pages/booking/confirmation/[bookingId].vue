@@ -1,6 +1,63 @@
 <script setup lang="ts">
+import type { GetResult, Order } from "~/api/types";
+
+definePageMeta({
+  middleware: ["auth"],
+});
+
 const route = useRoute();
 const { bookingId } = route.params;
+const baseURL = process.env.BASE_URL;
+const token = useCookie("auth");
+const order = ref<Order>();
+
+// 取得單筆訂單
+const { data } = await useFetch<GetResult<Order>>(`/orders/${bookingId}`, {
+  method: "GET",
+  baseURL,
+  headers: {
+    Authorization: token.value || "",
+  },
+  onResponseError({ response }) {
+    token.value = null;
+  },
+});
+
+order.value = data.value?.result;
+
+// 使用 Intl.DateTimeFormat 轉變日期字串
+const formatter = new Intl.DateTimeFormat("zh-TW", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  weekday: "long",
+});
+const formattedDateStart = formatter.format(
+  new Date(data.value?.result.checkInDate!)
+);
+const formattedDateEnd = formatter.format(
+  new Date(data.value?.result.checkOutDate!)
+);
+
+// 計算幾晚
+const daysCount = computed(() => {
+  const startDate = data.value?.result.checkInDate!;
+  const endDate = data.value?.result.checkOutDate!;
+
+  if (startDate === null || endDate === null) return 0;
+
+  const differenceTime =
+    new Date(endDate).getTime() - new Date(startDate).getTime();
+
+  const differenceDay = Math.round(differenceTime / (1000 * 60 * 60 * 24));
+
+  return differenceDay;
+});
+
+// 計算總價
+const totalPrice = computed(() =>
+  useThousands(data.value?.result.roomId?.price! * daysCount.value)
+);
 
 // seo
 const title = useMetaTitle("預約成功");
@@ -22,7 +79,7 @@ useSeoMeta({
               name="material-symbols:check"
             />
             <div class="text-neutral-0 fs-1">
-              <h1 class="fw-bold">恭喜，Jessica！</h1>
+              <h1 class="fw-bold">恭喜，{{ order?.userInfo.name }}！</h1>
               <p class="mb-0 fw-bold">您已預訂成功</p>
             </div>
           </div>
@@ -37,7 +94,7 @@ useSeoMeta({
               立即查看您的訂單紀錄
             </h2>
             <NuxtLink
-              :to="`/user/${route.params.userId}/order`"
+              :to="`/user/${order?.orderUserId}/order`"
               class="btn btn-primary-100 px-md-15 py-4 text-neutral-0 fw-bold border-0 rounded-3"
             >
               前往我的訂單
@@ -50,15 +107,21 @@ useSeoMeta({
           <div class="d-flex flex-column gap-6">
             <div>
               <p class="mb-2 text-neutral-40 fw-medium">姓名</p>
-              <span class="text-neutral-0 fw-bold">Jessica Wang</span>
+              <span class="text-neutral-0 fw-bold">{{
+                order?.userInfo.name
+              }}</span>
             </div>
             <div>
               <p class="mb-2 text-neutral-40 fw-medium">手機號碼</p>
-              <span class="text-neutral-0 fw-bold">+886 912 345 678</span>
+              <span class="text-neutral-0 fw-bold">{{
+                order?.userInfo.phone
+              }}</span>
             </div>
             <div>
               <p class="mb-2 text-neutral-40 fw-medium">電子信箱</p>
-              <span class="text-neutral-0 fw-bold">jessica@sample.com</span>
+              <span class="text-neutral-0 fw-bold">{{
+                order?.userInfo.email
+              }}</span>
             </div>
           </div>
         </div>
@@ -79,33 +142,35 @@ useSeoMeta({
 
             <img
               class="img-fluid rounded-3"
-              src="/images/room-a-1.png"
-              alt="room-a"
+              :src="order?.roomId?.imageUrl"
+              :alt="order?.roomId?.name"
             />
 
             <section class="d-flex flex-column gap-6">
               <h3
                 class="d-flex align-items-center mb-6 text-neutral-80 fs-8 fs-md-6 fw-bold"
               >
-                <p class="mb-0">尊爵雙人房，1 晚</p>
+                <p class="mb-0">
+                  {{ order?.roomId?.name }}，{{ daysCount }} 晚
+                </p>
                 <span
                   class="d-inline-block mx-4 bg-neutral-80"
                   style="width: 1px; height: 18px"
                 />
-                <p class="mb-0">住宿人數：2 位</p>
+                <p class="mb-0">住宿人數：{{ order?.peopleNum }} 位</p>
               </h3>
 
               <div class="text-neutral-80 fs-8 fs-md-7 fw-bold">
                 <p class="title-deco mb-2">
-                  入住：6 月 10 日星期二，15:00 可入住
+                  入住：{{ formattedDateStart.slice(5) }}，15:00 可入住
                 </p>
                 <p class="title-deco mb-0">
-                  退房：6 月 11 日星期三，12:00 前退房
+                  退房：{{ formattedDateEnd.slice(5) }}，12:00 前退房
                 </p>
               </div>
 
               <p class="mb-0 text-neutral-80 fs-8 fs-md-7 fw-bold">
-                NT$ 10,000
+                NT$ {{ totalPrice }}
               </p>
             </section>
 
@@ -120,7 +185,18 @@ useSeoMeta({
               <ul
                 class="d-flex flex-wrap row-gap-2 column-gap-10 p-6 mb-0 fs-8 fs-md-7 bg-neutral-0 border border-neutral-40 rounded-3 list-unstyled"
               >
-                <li class="flex-item d-flex gap-2">
+                <li
+                  v-for="(item, idx) in order?.roomId?.facilityInfo"
+                  :key="idx"
+                  class="flex-item d-flex gap-2"
+                >
+                  <Icon
+                    class="fs-5 text-primary-100"
+                    name="material-symbols:check"
+                  />
+                  <p class="mb-0 text-neutral-80 fw-bold">{{ item.title }}</p>
+                </li>
+                <!-- <li class="flex-item d-flex gap-2">
                   <Icon
                     class="fs-5 text-primary-100"
                     name="material-symbols:check"
@@ -189,7 +265,7 @@ useSeoMeta({
                     name="material-symbols:check"
                   />
                   <p class="mb-0 text-neutral-80 fw-bold">音響</p>
-                </li>
+                </li> -->
               </ul>
             </section>
 
@@ -202,7 +278,18 @@ useSeoMeta({
               <ul
                 class="d-flex flex-wrap row-gap-2 column-gap-10 p-6 mb-0 fs-8 fs-md-7 bg-neutral-0 border border-neutral-40 rounded-3 list-unstyled"
               >
-                <li class="flex-item d-flex gap-2">
+                <li
+                  v-for="(item, idx) in order?.roomId?.amenityInfo"
+                  :key="idx"
+                  class="flex-item d-flex gap-2"
+                >
+                  <Icon
+                    class="fs-5 text-primary-100"
+                    name="material-symbols:check"
+                  />
+                  <p class="mb-0 text-neutral-80 fw-bold">{{ item.title }}</p>
+                </li>
+                <!-- <li class="flex-item d-flex gap-2">
                   <Icon
                     class="fs-5 text-primary-100"
                     name="material-symbols:check"
@@ -271,7 +358,7 @@ useSeoMeta({
                     name="material-symbols:check"
                   />
                   <p class="mb-0 text-neutral-80 fw-bold">梳子</p>
-                </li>
+                </li> -->
               </ul>
             </section>
           </div>
@@ -330,7 +417,7 @@ $grid-breakpoints: (
 }
 
 .flex-item {
-  flex: 1 1 25%;
+  flex: 1 1 30%;
   white-space: nowrap;
 
   @include media-breakpoint-down(md) {

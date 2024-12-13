@@ -1,18 +1,166 @@
 <script setup lang="ts">
+import type { FormContext } from "vee-validate";
+import { getRoomById, getRooms } from "~/api/rooms";
+import type { GetResult, Order, UserInfo } from "~/api/types";
+import { useThousands } from "~/composables/useThousands";
+
+interface FormValues {
+  name: string;
+  phone: string;
+  email: string;
+  county: string;
+  district: string;
+  detail: string;
+}
+
+const route = useRoute();
 const router = useRouter();
 
-const goBack = () => {
-  router.back();
-};
 const isLoading = ref(false);
 
-const confirmBooking = (bookingId: string) => {
+const bookingStore = useBookingStore();
+const { bookingDate, bookingPeople, daysCount } = storeToRefs(bookingStore);
+
+// 使用 Intl.DateTimeFormat 轉變日期字串
+const formatter = new Intl.DateTimeFormat("zh-TW", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  weekday: "long",
+});
+const formattedDateStart = formatter.format(
+  new Date(bookingDate.value.date.start)
+);
+const formattedDateEnd = formatter.format(
+  new Date(bookingDate.value.date.end!)
+);
+
+// 取得全部房型
+const { data: roomsList } = await useAsyncData("rooms", () => getRooms());
+
+// 取得詳細房間資訊
+const roomId = route.params.roomId as string;
+const { data: room } = await useAsyncData("room", () => getRoomById(roomId));
+
+// 改變房型
+const roomName = ref(room.value?.name);
+const showRoomEdit = ref(false);
+const editRoomHandler = () => {
+  showRoomEdit.value = !showRoomEdit.value;
+};
+const changeRoom = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  const dataId = selectedOption.getAttribute("data-id");
+  router.push(`/rooms/${dataId}/booking`);
+};
+
+// 改變人數
+const showPeople = ref(false);
+const showPeopleEdit = () => {
+  showPeople.value = !showPeople.value;
+};
+
+// 初始化台灣縣市二級選單 plugin tw-city-selector
+const selectedCounty = ref("");
+const selectedDistrict = ref("");
+
+onMounted(() => {
+  const { $twCitySelector } = useNuxtApp();
+  new $twCitySelector({
+    el: ".city-selector-set",
+    standardWords: true,
+    elCounty: ".county",
+    elDistrict: ".district",
+    elZipcode: ".zipcode",
+    hasZipcode: true,
+    hiddenZipcode: true,
+  });
+});
+
+// 表單送出隱藏按鈕
+const submitButtonRef = ref<HTMLButtonElement | null>(null);
+const confirmBooking = () => {
+  submitButtonRef.value?.click();
+};
+
+// 檢查用戶是否登入
+const authCookie = useCookie("auth");
+const baseURL = process.env.BASE_URL;
+const user = ref<UserInfo>();
+if (authCookie.value) {
+  const { data } = await useFetch<GetResult<UserInfo>>(`/user/`, {
+    method: "GET",
+    baseURL,
+    headers: {
+      Authorization: authCookie.value!,
+    },
+    onResponseError({ response }) {
+      authCookie.value = null; // 清除 token
+    },
+  });
+
+  // 取得用戶
+  if (data.value) {
+    user.value = data.value.result;
+  }
+}
+
+const onSubmit = async (
+  data: any,
+  { resetForm }: Pick<FormContext<FormValues>, "resetForm">
+) => {
+  // 沒登入就導到登入頁
+  if (!user.value) return navigateTo("/account/login");
+
+  // 取得 zipcode
+  const selectedZipcode = (
+    document.querySelector(".zipcode") as HTMLInputElement
+  ).value;
+
+  const userInfo = {
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    address: {
+      zipcode: selectedZipcode,
+      detail: `${selectedCounty.value}${selectedDistrict.value}${data.detail}`,
+    },
+  };
+
+  const body = {
+    roomId,
+    checkInDate: bookingDate.value.date.start.replaceAll("-", "/"),
+    checkOutDate: bookingDate.value.date.end.replaceAll("-", "/"),
+    peopleNum: bookingPeople.value,
+    userInfo,
+  };
+
   isLoading.value = true;
 
-  setTimeout(() => {
+  try {
+    const res = await $fetch<GetResult<Order>>(`/orders/`, {
+      method: "POST",
+      baseURL,
+      body,
+      headers: {
+        Authorization: authCookie.value || "",
+      },
+      onResponseError({ response }) {
+        const { message } = response._data;
+        console.error(message);
+      },
+    });
+
+    router.push(`/booking/confirmation/${res.result._id}`);
+  } catch (error) {
+    console.log(error);
+  } finally {
     isLoading.value = false;
-    router.push(`/booking/confirmation/${bookingId}`);
-  }, 1500);
+  }
+
+  // 從第二個參數取出 resetForm 方法來重置表單
+  resetForm();
 };
 
 // seo
@@ -29,7 +177,7 @@ useSeoMeta({
         <button
           class="d-flex align-items-baseline gap-2 mb-10 bg-transparent border-0"
           type="button"
-          @click="goBack"
+          @click="navigateTo(`/rooms/${room?._id}`)"
         >
           <Icon class="fs-5 text-neutral-100" name="mdi:keyboard-arrow-left" />
           <h1 class="mb-0 text-neutral-100 fs-3 fw-bold">確認訂房資訊</h1>
@@ -47,13 +195,32 @@ useSeoMeta({
                 >
                   <div>
                     <h3 class="title-deco mb-2 fs-7 fw-bold">選擇房型</h3>
-                    <p class="mb-0 fw-medium">尊爵雙人房</p>
+                    <p v-if="!showRoomEdit" class="mb-0 fw-medium">
+                      {{ room?.name }}
+                    </p>
+                    <select
+                      v-else
+                      class="form-select"
+                      aria-label="Select room"
+                      v-model="roomName"
+                      @change="changeRoom"
+                    >
+                      <option
+                        v-for="item in roomsList"
+                        :key="item._id"
+                        :value="item.name"
+                        :data-id="item._id"
+                      >
+                        {{ item.name }}
+                      </option>
+                    </select>
                   </div>
                   <button
                     class="bg-transparent border-0 fw-bold text-decoration-underline"
                     type="button"
+                    @click="editRoomHandler"
                   >
-                    編輯
+                    {{ !showRoomEdit ? "編輯" : "確定" }}
                   </button>
                 </div>
                 <div
@@ -61,8 +228,12 @@ useSeoMeta({
                 >
                   <div>
                     <h3 class="title-deco mb-2 fs-7 fw-bold">訂房日期</h3>
-                    <p class="mb-2 fw-medium">入住：12 月 4 日星期二</p>
-                    <p class="mb-0 fw-medium">退房：12 月 6 日星期三</p>
+                    <p class="mb-2 fw-medium">
+                      入住：{{ formattedDateStart.slice(5) }}
+                    </p>
+                    <p class="mb-0 fw-medium">
+                      退房：{{ formattedDateEnd.slice(5) }}
+                    </p>
                   </div>
                   <button
                     class="bg-transparent border-0 fw-bold text-decoration-underline"
@@ -76,13 +247,27 @@ useSeoMeta({
                 >
                   <div>
                     <h3 class="title-deco mb-2 fs-7 fw-bold">房客人數</h3>
-                    <p class="mb-0 fw-medium">2 人</p>
+                    <p v-if="!showPeople" class="mb-0 fw-medium">
+                      {{ bookingPeople }} 人
+                    </p>
+                    <select
+                      v-else
+                      class="form-select"
+                      aria-label="Default select example"
+                      v-model="bookingPeople"
+                    >
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
                   </div>
                   <button
                     class="bg-transparent border-0 fw-bold text-decoration-underline"
                     type="button"
+                    @click="showPeopleEdit"
                   >
-                    編輯
+                    {{ !showPeople ? "編輯" : "確認" }}
                   </button>
                 </div>
               </div>
@@ -105,71 +290,100 @@ useSeoMeta({
                 </button>
               </div>
 
-              <div class="d-flex flex-column gap-6">
+              <VeeForm
+                v-slot="{ errors }"
+                class="d-flex flex-column gap-6"
+                @submit="onSubmit"
+              >
                 <div class="text-neutral-100">
-                  <label for="name" class="form-label fs-8 fs-md-7 fw-bold"
-                    >姓名</label
-                  >
-                  <input
+                  <label for="name" class="form-label fs-8 fs-md-7 fw-bold">
+                    姓名
+                  </label>
+                  <VeeField
                     id="name"
+                    name="name"
                     type="text"
                     class="form-control p-4 fs-8 fs-md-7 rounded-3"
+                    :class="{ 'is-invalid': errors['name'] }"
                     placeholder="請輸入姓名"
+                    rules="required|min:2"
                   />
+                  <VeeErrorMessage class="invalid-feedback" name="name" />
                 </div>
 
                 <div class="text-neutral-100">
-                  <label for="phone" class="form-label fs-8 fs-md-7 fw-bold"
-                    >手機號碼</label
-                  >
-                  <input
+                  <label for="phone" class="form-label fs-8 fs-md-7 fw-bold">
+                    手機號碼
+                  </label>
+                  <VeeField
                     id="phone"
+                    name="phone"
                     type="tel"
                     class="form-control p-4 fs-8 fs-md-7 rounded-3"
+                    :class="{ 'is-invalid': errors['phone'] }"
                     placeholder="請輸入手機號碼"
+                    rules="required|isPhone"
                   />
+                  <VeeErrorMessage class="invalid-feedback" name="phone" />
                 </div>
 
                 <div class="text-neutral-100">
-                  <label for="email" class="form-label fs-8 fs-md-7 fw-bold"
-                    >電子信箱</label
-                  >
-                  <input
+                  <label for="email" class="form-label fs-8 fs-md-7 fw-bold">
+                    電子信箱
+                  </label>
+                  <VeeField
                     id="email"
+                    name="email"
                     type="email"
                     class="form-control p-4 fs-8 fs-md-7 rounded-3"
+                    :class="{ 'is-invalid': errors['email'] }"
                     placeholder="請輸入電子信箱"
+                    rules="required|email"
                   />
+                  <VeeErrorMessage class="invalid-feedback" name="email" />
                 </div>
 
                 <div class="text-neutral-100">
-                  <label for="address" class="form-label fs-8 fs-md-7 fw-bold"
-                    >地址</label
-                  >
-                  <div class="d-flex gap-2 mb-4">
-                    <select
-                      class="form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
-                    >
-                      <option value="臺北市">臺北市</option>
-                      <option value="臺中市">臺中市</option>
-                      <option selected value="高雄市">高雄市</option>
-                    </select>
-                    <select
-                      class="form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
-                    >
-                      <option value="前金區">前金區</option>
-                      <option value="鹽埕區">鹽埕區</option>
-                      <option selected value="新興區">新興區</option>
-                    </select>
+                  <label for="address" class="form-label fs-8 fs-md-7 fw-bold">
+                    地址
+                  </label>
+                  <div class="city-selector-set d-flex gap-2 mb-4">
+                    <div class="w-50">
+                      <select
+                        id="county"
+                        class="county form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
+                        v-model="selectedCounty"
+                      />
+                    </div>
+                    <div class="w-50">
+                      <select
+                        id="district"
+                        class="district form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
+                        v-model="selectedDistrict"
+                      />
+                    </div>
+                    <input
+                      id="zipcode"
+                      class="zipcode form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3 d-none"
+                      type="text"
+                      placeholder="郵遞區號"
+                      readOnly
+                    />
                   </div>
-                  <input
-                    id="address"
+                  <VeeField
+                    id="road"
+                    name="detail"
                     type="text"
                     class="form-control p-4 fs-8 fs-md-7 rounded-3"
+                    :class="{ 'is-invalid': errors['detail'] }"
                     placeholder="請輸入詳細地址"
+                    rules="required"
                   />
+                  <VeeErrorMessage class="invalid-feedback" name="detail" />
                 </div>
-              </div>
+
+                <button ref="submitButtonRef" type="submit" class="d-none" />
+              </VeeForm>
             </section>
 
             <hr class="my-10 my-md-12 opacity-100 text-neutral-60" />
@@ -192,7 +406,7 @@ useSeoMeta({
                         name="fluent:slide-size-24-filled"
                       />
                       <p class="mb-0 fw-bold text-neutral-80 text-nowrap">
-                        24 坪
+                        {{ room?.areaInfo }} 坪
                       </p>
                     </li>
                     <li
@@ -203,7 +417,7 @@ useSeoMeta({
                         name="material-symbols:king-bed"
                       />
                       <p class="mb-0 fw-bold text-neutral-80 text-nowrap">
-                        1 張大床
+                        {{ room?.bedInfo }} 張大床
                       </p>
                     </li>
                     <li
@@ -214,7 +428,7 @@ useSeoMeta({
                         name="ic:baseline-person"
                       />
                       <p class="mb-0 fw-bold text-neutral-80 text-nowrap">
-                        2-4 人
+                        2-{{ room?.maxPeople }} 人
                       </p>
                     </li>
                   </ul>
@@ -229,41 +443,20 @@ useSeoMeta({
                   <ul
                     class="d-flex flex-wrap gap-6 gap-md-10 p-6 fs-8 fs-md-7 bg-neutral-0 rounded-3 list-unstyled"
                   >
-                    <li class="d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">市景</p>
-                    </li>
-                    <li class="d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">獨立衛浴</p>
-                    </li>
-                    <li class="d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">客廳</p>
-                    </li>
-                    <li class="d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">書房</p>
-                    </li>
-                    <li class="d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">樓層電梯</p>
-                    </li>
+                    <template
+                      v-for="layout in room?.layoutInfo"
+                      :key="layout.title"
+                    >
+                      <li v-if="layout.isProvide" class="d-flex gap-2">
+                        <Icon
+                          class="fs-5 text-primary-100"
+                          name="material-symbols:check"
+                        />
+                        <p class="mb-0 text-neutral-80 fw-bold">
+                          {{ layout.title }}
+                        </p>
+                      </li>
+                    </template>
                   </ul>
                 </section>
 
@@ -276,76 +469,23 @@ useSeoMeta({
                   <ul
                     class="d-flex flex-wrap row-gap-2 column-gap-10 p-6 mb-0 fs-8 fs-md-7 bg-neutral-0 rounded-3 list-unstyled"
                   >
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">平面電視</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">吹風機</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">冰箱</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">熱水壺</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">檯燈</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">衣櫃</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">除濕機</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">浴缸</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">書桌</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">音響</p>
-                    </li>
+                    <template
+                      v-for="facility in room?.facilityInfo"
+                      :key="facility.title"
+                    >
+                      <li
+                        v-if="facility.isProvide"
+                        class="flex-item d-flex gap-2"
+                      >
+                        <Icon
+                          class="fs-5 text-primary-100"
+                          name="material-symbols:check"
+                        />
+                        <p class="mb-0 text-neutral-80 fw-bold">
+                          {{ facility.title }}
+                        </p>
+                      </li>
+                    </template>
                   </ul>
                 </section>
 
@@ -358,76 +498,23 @@ useSeoMeta({
                   <ul
                     class="d-flex flex-wrap row-gap-2 column-gap-10 p-6 mb-0 fs-8 fs-md-7 bg-neutral-0 rounded-3 list-unstyled"
                   >
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">衛生紙</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">拖鞋</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">沐浴用品</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">清潔用品</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">刮鬍刀</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">吊衣架</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">浴巾</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">刷牙用品</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">罐裝水</p>
-                    </li>
-                    <li class="flex-item d-flex gap-2">
-                      <Icon
-                        class="fs-5 text-primary-100"
-                        name="material-symbols:check"
-                      />
-                      <p class="mb-0 text-neutral-80 fw-bold">梳子</p>
-                    </li>
+                    <template
+                      v-for="amenity in room?.amenityInfo"
+                      :key="amenity.title"
+                    >
+                      <li
+                        v-if="amenity.isProvide"
+                        class="flex-item d-flex gap-2"
+                      >
+                        <Icon
+                          class="fs-5 text-primary-100"
+                          name="material-symbols:check"
+                        />
+                        <p class="mb-0 text-neutral-80 fw-bold">
+                          {{ amenity.title }}
+                        </p>
+                      </li>
+                    </template>
                   </ul>
                 </section>
               </div>
@@ -440,8 +527,8 @@ useSeoMeta({
             >
               <img
                 class="img-fluid rounded-3"
-                src="/images/room-a-1.png"
-                alt="room-a"
+                :src="room?.imageUrl"
+                :alt="room?.name"
               />
 
               <div>
@@ -454,14 +541,16 @@ useSeoMeta({
                   <div
                     class="d-flex align-items-center text-neutral-100 fw-medium"
                   >
-                    <span>NT$ 10,000</span>
+                    <span>NT$ {{ useThousands(room!.price) }}</span>
                     <Icon
                       class="ms-2 me-1 text-neutral-80"
                       name="material-symbols:close"
                     />
-                    <span class="text-neutral-80">2 晚</span>
+                    <span class="text-neutral-80">{{ daysCount }} 晚</span>
                   </div>
-                  <span class="fw-medium"> NT$ 20,000 </span>
+                  <span class="fw-medium">
+                    NT$ {{ useThousands(room!.price * daysCount) }}
+                  </span>
                 </div>
                 <div
                   class="d-flex justify-content-between align-items-center fw-medium"
@@ -476,14 +565,16 @@ useSeoMeta({
                   class="d-flex justify-content-between align-items-center text-neutral-100 fw-bold"
                 >
                   <p class="d-flex align-items-center mb-0">總價</p>
-                  <span> NT$ 19,000 </span>
+                  <span>
+                    NT$ {{ useThousands(room!.price * daysCount - 1000) }}
+                  </span>
                 </div>
               </div>
 
               <button
                 class="btn btn-primary-100 py-4 text-neutral-0 fw-bold rounded-3"
                 type="button"
-                @click="confirmBooking('HH2302183151222')"
+                @click="confirmBooking"
               >
                 確認訂房
               </button>
@@ -537,7 +628,7 @@ $grid-breakpoints: (
 }
 
 .flex-item {
-  flex: 1 1 15%;
+  width: 97.28px;
 
   @include media-breakpoint-down(md) {
     flex-basis: 40%;

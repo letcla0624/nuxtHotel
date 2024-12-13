@@ -3,7 +3,7 @@ import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { getFoods } from "~/api/foods";
 import { getNews } from "~/api/news";
 import { getRooms } from "~/api/rooms";
-import { heroList } from "~/data/Hero";
+import { heroList } from "~/data/heroList";
 
 const modules = ref([Autoplay, Navigation, Pagination]);
 const roomSwiper = ref<any | null>(null);

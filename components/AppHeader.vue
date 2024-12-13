@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import type { GetResult, UserInfo } from "~/api/types";
+
 const route = useRoute();
+const router = useRouter();
 const transparentBgRoute = ["index", "rooms"];
 
 const isTransparentRoute = computed(() =>
@@ -19,6 +22,44 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
+
+// 取得用戶
+const authCookie = useCookie("auth");
+const username = ref("");
+const userId = ref("");
+if (authCookie.value) {
+  const baseURL = process.env.BASE_URL;
+  const { data: user } = await useFetch<GetResult<UserInfo>>(`/user/`, {
+    method: "GET",
+    baseURL,
+    headers: {
+      Authorization: authCookie.value!,
+    },
+    onResponseError({ response }) {
+      authCookie.value = null; // 清除 token
+      console.error(response._data.message);
+    },
+  });
+
+  // 取得用戶名稱
+  if (user.value?.result.name) {
+    const spiltName = user.value?.result.name.split(" ");
+    username.value = spiltName[0];
+  }
+
+  // 取得用戶 ID
+  if (user.value?.result._id) {
+    userId.value = user.value.result._id;
+  }
+}
+
+// 登出
+const { sweetAlert } = useSweetAlert();
+const logout = () => {
+  authCookie.value = null; // 清除 token
+  sweetAlert("success", "登出成功");
+  router.push("/");
+};
 </script>
 
 <template>
@@ -54,37 +95,40 @@ onUnmounted(() => {
                 客房旅宿
               </NuxtLink>
             </li>
-            <li class="d-none d-md-block nav-item">
-              <div class="btn-group">
-                <button
-                  type="button"
-                  class="nav-link d-flex gap-2 p-4 text-neutral-0"
-                  data-bs-toggle="dropdown"
-                >
-                  <Icon class="fs-4" name="mdi:account-circle-outline" />
-                  Jessica
-                </button>
-                <ul
-                  class="dropdown-menu py-3 overflow-hidden"
-                  style="right: 0; left: auto; border-radius: 20px"
-                >
-                  <li>
-                    <NuxtLink
-                      :to="`/user/${route.params.userId}/profile`"
-                      class="dropdown-item px-6 py-4"
-                    >
-                      我的帳戶
-                    </NuxtLink>
-                  </li>
-                  <li>
-                    <NuxtLink to="/" class="dropdown-item px-6 py-4">
-                      登出
-                    </NuxtLink>
-                  </li>
-                </ul>
-              </div>
+            <li v-if="authCookie" class="nav-item dropdown">
+              <button
+                type="button"
+                class="nav-link d-flex gap-2 p-4 text-neutral-0 mx-auto"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <Icon class="fs-4" name="mdi:account-circle-outline" />
+                {{ username }}
+              </button>
+              <ul
+                class="dropdown-menu py-3 overflow-hidden"
+                style="right: 0; left: auto; border-radius: 20px"
+              >
+                <li>
+                  <NuxtLink
+                    :to="`/user/${userId}/profile`"
+                    class="dropdown-item px-6 py-4"
+                  >
+                    我的帳戶
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink
+                    to="/"
+                    class="dropdown-item px-6 py-4"
+                    @click="logout"
+                  >
+                    登出
+                  </NuxtLink>
+                </li>
+              </ul>
             </li>
-            <li class="d-md-none nav-item">
+            <li v-else class="nav-item">
               <NuxtLink to="/account/login" class="nav-link p-4 text-neutral-0">
                 會員登入
               </NuxtLink>

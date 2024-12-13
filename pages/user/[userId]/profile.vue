@@ -1,13 +1,208 @@
 <script setup lang="ts">
+import dayjs from "dayjs";
+import type { FormContext } from "vee-validate";
+import type { GetResult, UserInfo } from "~/api/types";
+import ZipCodeMap from "~/data/zipCodeMap";
+
+interface PasswordData {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 definePageMeta({
   layout: "user-layout",
+  middleware: ["auth"],
 });
 
 const isEditPassword = ref(false);
 const isEditProfile = ref(false);
 
-const date = new Date();
-const years = date.getFullYear() - 1910;
+const years = new Date().getFullYear() - 1910;
+
+// 取得用戶
+const authCookie = useCookie("auth");
+const baseURL = process.env.BASE_URL;
+const user = ref<UserInfo>();
+
+if (authCookie.value) {
+  const res = await $fetch<GetResult<UserInfo>>("/user/", {
+    method: "GET",
+    baseURL,
+    headers: {
+      Authorization: authCookie.value!,
+    },
+    onResponseError({ response }) {
+      authCookie.value = null; // 清除 token
+      console.error(response._data.message);
+    },
+  });
+
+  user.value = res.result;
+}
+
+const passwordForm = ref({
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+const { sweetAlert } = useSweetAlert();
+
+// 變更密碼
+const onChangePassWord = async (
+  data: Record<string, string>,
+  { resetForm }: Pick<FormContext<PasswordData>, "resetForm">
+) => {
+  const body = {
+    userId: user.value?._id,
+    name: user.value?.name,
+    phone: user.value?.phone,
+    birthday: user.value?.birthday,
+    address: {
+      zipcode: user.value?.address.zipcode,
+      detail: user.value?.address.detail,
+    },
+    oldPassword: data.oldPassword,
+    newPassword: data.newPassword,
+  };
+
+  try {
+    await $fetch("/user/", {
+      method: "PUT",
+      baseURL,
+      body,
+      headers: {
+        Authorization: authCookie.value!,
+      },
+      onResponseError({ response }) {
+        console.error(response._data.message);
+      },
+    });
+
+    sweetAlert("success", "變更密碼成功！");
+    resetForm();
+    isEditPassword.value = false;
+  } catch (error: any) {
+    sweetAlert("error", "變更密碼失敗！", `${error.response._data.message}`);
+    console.error(error);
+  }
+};
+
+const birthday = ref(dayjs(user.value?.birthday).format("YYYY 年 MM 月 DD 日"));
+
+// 出生年
+const userBirthYear = birthday.value.slice(0, 6);
+const selectedYear = ref(userBirthYear);
+
+const changeYear = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  selectedYear.value = selectedOption.value;
+};
+
+// 出生月
+const userBirthMonth = birthday.value.slice(7, 11);
+const selectedMonth = ref(userBirthMonth);
+
+const changeMonth = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  selectedMonth.value = selectedOption.value;
+};
+
+// 出生日
+const userBirthDay = birthday.value.slice(12);
+const selectedDay = ref(userBirthDay);
+
+const changeDay = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  selectedDay.value = selectedOption.value;
+};
+
+// 地址
+const city = ZipCodeMap.find(
+  (item) => item.zipcode === Number(user?.value?.address.zipcode)
+)?.city;
+const district = ZipCodeMap.find(
+  (item) => item.zipcode === Number(user?.value?.address.zipcode)
+)?.county;
+
+// 初始化台灣縣市二級選單 plugin tw-city-selector
+const selectedCounty = ref(city || "");
+const selectedDistrict = ref(district || "");
+
+onMounted(() => {
+  const { $twCitySelector } = useNuxtApp();
+  new $twCitySelector({
+    el: ".city-selector-set",
+    standardWords: true,
+    elCounty: ".county",
+    elDistrict: ".district",
+    elZipcode: ".zipcode",
+    hasZipcode: true,
+    hiddenZipcode: true,
+    countyValue: city, // 預設城市
+    districtValue: district, // 預設地區
+  });
+});
+
+// 更新用戶資料
+const onChangeUserData = async (data: any) => {
+  const changeYear = data.userYear.slice(0, 4);
+  const changeMonth = data.userMonth.slice(0, 2);
+  const changeDay = data.userDay.slice(0, 2);
+
+  const zipCode = ZipCodeMap.find(
+    (item) =>
+      item.city === selectedCounty.value &&
+      item.county === selectedDistrict.value
+  )?.zipcode;
+
+  const body = {
+    userId: user.value?._id,
+    name: data.name,
+    phone: data.phone,
+    birthday: `${changeYear}/${changeMonth}/${changeDay}`,
+    address: {
+      zipcode: zipCode,
+      detail: data.detail,
+    },
+  };
+
+  try {
+    await $fetch("/user/", {
+      method: "PUT",
+      baseURL,
+      body,
+      headers: {
+        Authorization: authCookie.value!,
+      },
+      onResponseError({ response }) {
+        console.error(response._data.message);
+      },
+    });
+
+    // 儲存用戶資料 (不這樣做無法雙向綁定)
+    user.value = {
+      ...user.value,
+      email: user.value?.email!,
+      name: body.name,
+      phone: body.phone,
+      birthday: `${body.birthday}`,
+      address: {
+        zipcode: `${zipCode}`,
+        detail: body.address.detail,
+      },
+    };
+
+    sweetAlert("success", "變更資料成功！");
+    isEditProfile.value = false;
+  } catch (error: any) {
+    sweetAlert("error", "變更資料失敗！", `${error.response._data.message}`);
+    console.error(error);
+  }
+};
 
 // seo
 const title = useMetaTitle("個人資料");
@@ -29,7 +224,7 @@ useSeoMeta({
             <span
               class="form-control pe-none p-0 text-neutral-100 fw-bold border-0"
             >
-              Jessica@exsample.com
+              {{ user?.email }}
             </span>
           </div>
 
@@ -57,32 +252,44 @@ useSeoMeta({
             </button>
           </div>
 
-          <div
+          <VeeForm
+            v-slot="{ errors }"
             class="d-flex flex-column gap-4 gap-md-6"
             :class="{ 'd-none': !isEditPassword }"
+            @submit="onChangePassWord"
           >
             <div>
               <label for="oldPassword" class="form-label fs-8 fs-md-7 fw-bold">
                 舊密碼
               </label>
-              <input
+              <VeeField
                 id="oldPassword"
+                name="oldPassword"
                 type="password"
                 class="form-control p-4 fs-7 rounded-3"
+                :class="{ 'is-invalid': errors['oldPassword'] }"
                 placeholder="請輸入舊密碼"
+                rules="required|min:8"
+                v-model="passwordForm.oldPassword"
               />
+              <VeeErrorMessage class="invalid-feedback" name="oldPassword" />
             </div>
 
             <div>
               <label for="newPassword" class="form-label fs-8 fs-md-7 fw-bold">
                 新密碼
               </label>
-              <input
+              <VeeField
                 id="newPassword"
+                name="newPassword"
                 type="password"
                 class="form-control p-4 fs-7 rounded-3"
-                placeholder="請輸入新密碼"
+                :class="{ 'is-invalid': errors['newPassword'] }"
+                placeholder="請輸入 8 碼以上新密碼"
+                rules="required|min:8|newPasswordMatch:@oldPassword"
+                v-model="passwordForm.newPassword"
               />
+              <VeeErrorMessage class="invalid-feedback" name="newPassword" />
             </div>
 
             <div>
@@ -92,22 +299,35 @@ useSeoMeta({
               >
                 確認新密碼
               </label>
-              <input
+              <VeeField
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 class="form-control p-4 fs-7 rounded-3"
+                :class="{ 'is-invalid': errors['confirmPassword'] }"
                 placeholder="請再輸入一次新密碼"
+                rules="required|min:8|passwordMatch:@newPassword"
+                v-model="passwordForm.confirmPassword"
+              />
+              <VeeErrorMessage
+                class="invalid-feedback"
+                name="confirmPassword"
               />
             </div>
-          </div>
 
-          <button
-            :class="{ 'd-none': !isEditPassword }"
-            class="btn btn-neutral-40 align-self-md-start px-8 py-4 text-neutral-60 rounded-3"
-            type="button"
-          >
-            儲存設定
-          </button>
+            <button
+              :class="{
+                disabled:
+                  passwordForm.oldPassword === '' &&
+                  passwordForm.newPassword === '' &&
+                  passwordForm.confirmPassword === '',
+              }"
+              class="btn btn-primary-100 align-self-md-start px-8 py-4 text-white rounded-3"
+              type="submit"
+            >
+              儲存設定
+            </button>
+          </VeeForm>
         </div>
       </section>
     </div>
@@ -117,7 +337,11 @@ useSeoMeta({
         class="rounded-3xl d-flex flex-column gap-6 gap-md-10 p-6 p-md-10 bg-neutral-0"
       >
         <h2 class="fs-6 fs-md-5 fw-bold">基本資料</h2>
-        <div class="d-flex flex-column gap-4 gap-md-6">
+        <VeeForm
+          v-slot="{ errors }"
+          class="d-flex flex-column gap-4 gap-md-6"
+          @submit="onChangeUserData"
+        >
           <div class="fs-8 fs-md-7">
             <label
               class="form-label"
@@ -129,17 +353,21 @@ useSeoMeta({
             >
               姓名
             </label>
-            <input
+            <VeeField
               id="name"
               name="name"
+              type="text"
               class="form-control text-neutral-100 fw-bold"
               :class="{
                 'pe-none p-0 border-0': !isEditProfile,
                 'p-4': isEditProfile,
+                'is-invalid': errors['name'],
               }"
-              type="text"
-              value="Jessica Wang"
+              placeholder="請輸入姓名"
+              rules="required|min:2"
+              :value="user?.name"
             />
+            <VeeErrorMessage class="invalid-feedback" name="name" />
           </div>
 
           <div class="fs-8 fs-md-7">
@@ -153,17 +381,21 @@ useSeoMeta({
             >
               手機號碼
             </label>
-            <input
+            <VeeField
               id="phone"
               name="phone"
+              type="tel"
               class="form-control text-neutral-100 fw-bold"
               :class="{
                 'pe-none p-0 border-0': !isEditProfile,
                 'p-4': isEditProfile,
+                'is-invalid': errors['phone'],
               }"
-              type="tel"
-              value="+886 912 345 678"
+              placeholder="請輸入手機號碼"
+              rules="required|isPhone"
+              :value="user?.phone"
             />
+            <VeeErrorMessage class="invalid-feedback" name="phone" />
           </div>
 
           <div class="fs-8 fs-md-7">
@@ -180,35 +412,76 @@ useSeoMeta({
             <span
               class="form-control pe-none p-0 text-neutral-100 fw-bold border-0"
               :class="{ 'd-none': isEditProfile }"
-              >1990 年 8 月 15 日</span
             >
+              {{ dayjs(user?.birthday).format("YYYY 年 MM 月 DD 日") }}
+            </span>
             <div class="d-flex gap-2" :class="{ 'd-none': !isEditProfile }">
-              <select
-                id="birth"
-                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-              >
-                <option
-                  v-for="year in years"
-                  :key="year"
-                  value="`${year + 1910} 年`"
+              <div class="w-50">
+                <VeeField
+                  as="select"
+                  name="userYear"
+                  class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                  :class="{
+                    'is-invalid': errors['userYear'],
+                  }"
+                  rules="required"
+                  v-model="selectedYear"
+                  @change="changeYear"
                 >
-                  {{ year + 1910 }} 年
-                </option>
-              </select>
-              <select
-                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-              >
-                <option v-for="month in 12" :key="month" value="`${month} 月`">
-                  {{ month }} 月
-                </option>
-              </select>
-              <select
-                class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-              >
-                <option v-for="day in 30" :key="day" value="`${day} 日`">
-                  {{ day }} 日
-                </option>
-              </select>
+                  <option
+                    v-for="year in years"
+                    :key="year"
+                    :value="`${year + 1910} 年`"
+                  >
+                    {{ year + 1910 }} 年
+                  </option>
+                </VeeField>
+                <VeeErrorMessage class="invalid-feedback" name="userYear" />
+              </div>
+              <div class="w-50">
+                <VeeField
+                  as="select"
+                  name="userMonth"
+                  class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                  :class="{
+                    'is-invalid': errors['userMonth'],
+                  }"
+                  rules="required"
+                  v-model="selectedMonth"
+                  @change="changeMonth"
+                >
+                  <option
+                    v-for="month in 12"
+                    :key="month"
+                    :value="`${month < 10 ? `0${month}` : month} 月`"
+                  >
+                    {{ month < 10 ? `0${month}` : month }} 月
+                  </option>
+                </VeeField>
+                <VeeErrorMessage class="invalid-feedback" name="userMonth" />
+              </div>
+              <div class="w-50">
+                <VeeField
+                  as="select"
+                  name="userDay"
+                  class="form-select p-4 text-neutral-80 fw-medium rounded-3"
+                  :class="{
+                    'is-invalid': errors['userDay'],
+                  }"
+                  rules="required"
+                  v-model="selectedDay"
+                  @change="changeDay"
+                >
+                  <option
+                    v-for="day in 31"
+                    :key="day"
+                    :value="`${day < 10 ? `0${day}` : day} 日`"
+                  >
+                    {{ day < 10 ? `0${day}` : day }} 日
+                  </option>
+                </VeeField>
+                <VeeErrorMessage class="invalid-feedback" name="userDay" />
+              </div>
             </div>
           </div>
 
@@ -226,34 +499,69 @@ useSeoMeta({
             <span
               class="form-control pe-none p-0 text-neutral-100 fw-bold border-0"
               :class="{ 'd-none': isEditProfile }"
-              >高雄市新興區六角路 123 號</span
             >
+              {{
+                `${
+                  ZipCodeMap.find(
+                    (item) => item.zipcode === Number(user?.address.zipcode)
+                  )?.city
+                }${
+                  ZipCodeMap.find(
+                    (item) => item.zipcode === Number(user?.address.zipcode)
+                  )?.county
+                }${user?.address.detail}`
+              }}
+            </span>
             <div :class="{ 'd-none': !isEditProfile }">
-              <div class="d-flex gap-2 mb-2">
-                <select
-                  class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-                >
-                  <option value="臺北市">臺北市</option>
-                  <option value="臺中市">臺中市</option>
-                  <option selected value="高雄市">高雄市</option>
-                </select>
-                <select
-                  class="form-select p-4 text-neutral-80 fw-medium rounded-3"
-                >
-                  <option value="前金區">前金區</option>
-                  <option value="鹽埕區">鹽埕區</option>
-                  <option selected value="新興區">新興區</option>
-                </select>
+              <div class="city-selector-set d-flex gap-2 mb-4">
+                <div class="w-50">
+                  <select
+                    id="county"
+                    class="county form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
+                    v-model="selectedCounty"
+                  />
+                </div>
+                <div class="w-50">
+                  <select
+                    id="district"
+                    class="district form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
+                    v-model="selectedDistrict"
+                  />
+                </div>
+                <input
+                  id="zipcode"
+                  class="zipcode form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3 d-none"
+                  type="text"
+                  placeholder="郵遞區號"
+                  readOnly
+                />
               </div>
-              <input
-                id="address"
+              <VeeField
+                id="detail"
+                name="detail"
                 type="text"
                 class="form-control p-4 rounded-3"
+                :class="{
+                  'fw-bold text-neutral-100': isEditProfile,
+                  'fw-medium text-neutral-80': !isEditProfile,
+                  'is-invalid': errors['detail'],
+                }"
                 placeholder="請輸入詳細地址"
+                rules="required"
+                :value="user?.address.detail"
               />
+              <VeeErrorMessage class="invalid-feedback" name="detail" />
             </div>
           </div>
-        </div>
+
+          <button
+            :class="{ 'd-none': !isEditProfile }"
+            class="btn btn-primary-100 align-self-md-start px-8 py-4 text-white rounded-3"
+            type="submit"
+          >
+            儲存設定
+          </button>
+        </VeeForm>
         <button
           :class="{ 'd-none': isEditProfile }"
           class="btn btn-outline-primary-100 align-self-start px-8 py-4 rounded-3"
@@ -262,14 +570,6 @@ useSeoMeta({
           @click="isEditProfile = !isEditProfile"
         >
           編輯
-        </button>
-
-        <button
-          :class="{ 'd-none': !isEditProfile }"
-          class="btn btn-neutral-40 align-self-md-start px-8 py-4 text-neutral-60 rounded-3"
-          type="button"
-        >
-          儲存設定
         </button>
       </section>
     </div>

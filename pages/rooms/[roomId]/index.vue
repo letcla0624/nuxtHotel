@@ -9,44 +9,33 @@ const openModal = () => {
   datePickerModal.value?.openModal();
 };
 
-const MAX_BOOKING_PEOPLE = 10;
-const bookingPeople = ref(1);
+const MAX_BOOKING_PEOPLE = 4;
 
-const daysCount = ref(0);
+// pinia
+const bookingStore = useBookingStore();
+const { bookingDate, bookingPeople, daysCount } = storeToRefs(bookingStore);
+// const { setStartDate, setEndDate, setDaysCount } = bookingStore;
 
 const daysFormatOnMobile = (date: string) =>
   date?.split("-").slice(1, 3).join(" / ");
 
-const formatDate = (date: Date) => {
-  const offsetToUTC8 = date.getHours() + 8;
-  date.setHours(offsetToUTC8);
-  return date.toISOString().split("T")[0];
-};
-
-const currentDate = new Date();
-
-const bookingDate = reactive({
-  date: {
-    start: formatDate(currentDate),
-    end: null,
-  },
-  minDate: new Date(),
-  maxDate: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)),
-});
-
 const handleDateChange = (bookingInfo: any) => {
+  // 要注意 bookingInfo 的結構
   const { start, end } = bookingInfo.date;
-  bookingDate.date.start = start;
-  bookingDate.date.end = end;
+  bookingDate.value.date.start = start;
+  bookingDate.value.date.end = end;
 
   bookingPeople.value = bookingInfo?.people || 1;
-  daysCount.value = bookingInfo.daysCount;
+  daysCount.value = bookingInfo.daysCount.value;
+
+  // setStartDate(start);
+  // setEndDate(end);
+  // setDaysCount(bookingInfo.daysCount.value);
 };
 
 // 取得詳細房型
 const roomId = route.params.roomId as string;
 const { data: room } = await useAsyncData("roomId", () => getRoomById(roomId));
-console.log(room.value);
 
 // seo
 const title = useMetaTitle("房型詳細");
@@ -272,9 +261,9 @@ useSeoMeta({
               </h5>
 
               <div class="text-neutral-80">
-                <h2 class="fw-bold">尊爵雙人房</h2>
+                <h2 class="fw-bold">{{ room?.name }}</h2>
                 <p class="mb-0 fw-medium">
-                  享受高級的住宿體驗，尊爵雙人房提供給您舒適寬敞的空間和精緻的裝潢。
+                  {{ room?.description }}
                 </p>
               </div>
 
@@ -365,10 +354,13 @@ useSeoMeta({
                 </div>
               </div>
 
-              <h5 class="mb-0 text-primary-100 fw-bold">NT$ 10,000</h5>
+              <h5 class="mb-0 text-primary-100 fw-bold">
+                NT$ {{ useThousands(room?.price) }}
+              </h5>
               <NuxtLink
                 :to="`/rooms/${route.params.roomId}/booking`"
                 class="btn btn-primary-100 py-4 text-neutral-0 fw-bold rounded-3"
+                :class="{ disabled: bookingDate.date.end === null }"
               >
                 立即預訂
               </NuxtLink>
@@ -382,7 +374,9 @@ useSeoMeta({
         class="d-flex d-md-none justify-content-between align-items-center position-fixed bottom-0 w-100 p-3 bg-neutral-0"
       >
         <template v-if="bookingDate.date.end === null">
-          <small class="text-neutral-80 fw-medium">ＮＴ$ 10,000 / 晚</small>
+          <small class="text-neutral-80 fw-medium">
+            NT$ {{ useThousands(room?.price) }} / 晚
+          </small>
           <button
             class="btn btn-primary-100 px-12 py-4 text-neutral-0 fw-bold rounded-3"
             type="button"
@@ -395,7 +389,8 @@ useSeoMeta({
         <template v-else>
           <div class="d-flex flex-column gap-1">
             <small class="text-neutral-80 fw-medium">
-              ＮＴ$ 10,000 / {{ daysCount }} 晚 / {{ bookingPeople }} 人
+              NT$ {{ useThousands(room?.price) }} / {{ daysCount }} 晚 /
+              {{ bookingPeople }} 人
             </small>
             <span class="text-neutral fs-9 fw-medium text-decoration-underline">
               {{ daysFormatOnMobile(bookingDate.date?.start) }} -
@@ -405,6 +400,7 @@ useSeoMeta({
           <NuxtLink
             :to="`/rooms/${route.params.roomId}/booking`"
             class="btn btn-primary-100 px-12 py-4 text-neutral-0 fw-bold rounded-3"
+            :class="{ disabled: bookingDate.date.end === null }"
           >
             立即預訂
           </NuxtLink>

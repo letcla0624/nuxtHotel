@@ -25,5 +25,5 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "cSpell.userWords": ["nuxt", "iconify", "swiper"]
+  "cSpell.userWords": ["nuxt", "nuxtjs", "iconify", "swiper", "pinia"]
 }
