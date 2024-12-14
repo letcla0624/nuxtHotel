@@ -29,6 +29,7 @@
     "sweetalert2": "^11.14.5",
     "tw-city-selector": "^2.1.1",
     "vue": "latest",
+    "vue-loading-overlay": "^6.0.6",
     "vue-router": "latest",
     "vue-screen-utils": "^1.0.0-beta.13"
   },

@@ -1,29 +1,17 @@
 <script setup lang="ts">
-import type { GetResult, UserInfo } from "~/api/types";
+import type { UserInfo } from "~/api/types";
 
 // 取得用戶
-const authCookie = useCookie("auth");
+const authStore = useAuthStore();
+const { getAuth } = authStore;
+const user = ref<UserInfo>();
+user.value = await getAuth();
+
+// 取得簡易用戶名稱
 const username = ref("");
-
-if (authCookie.value) {
-  const baseURL = process.env.BASE_URL;
-  const { data: user } = await useFetch<GetResult<UserInfo>>(`/user/`, {
-    method: "GET",
-    baseURL,
-    headers: {
-      Authorization: authCookie.value!,
-    },
-    onResponseError({ response }) {
-      authCookie.value = null; // 清除 token
-      console.error(response._data.message);
-    },
-  });
-
-  // 取得用戶名稱
-  if (user.value?.result.name) {
-    const spiltName = user.value?.result.name.split(" ");
-    username.value = spiltName[0];
-  }
+if (user.value?.name) {
+  const splitName = user.value.name.split(" ");
+  username.value = splitName[0];
 }
 </script>
 
@@ -58,12 +46,7 @@ if (authCookie.value) {
           <ul class="nav mb-10 mb-md-20 fw-bold">
             <li class="nav-item position-relative">
               <NuxtLink
-                :to="{
-                  name: 'user-userId-profile',
-                  params: {
-                    userId: $route.params.userId,
-                  },
-                }"
+                :to="`/user/${user?._id}/profile`"
                 exact-active-class="text-primary-100"
                 class="nav-link px-6 py-4 text-white"
               >
@@ -72,12 +55,7 @@ if (authCookie.value) {
             </li>
             <li class="nav-item position-relative">
               <NuxtLink
-                :to="{
-                  name: 'user-userId-order',
-                  params: {
-                    userId: $route.params.userId,
-                  },
-                }"
+                :to="`/user/${user?._id}/order`"
                 exact-active-class="text-primary-100"
                 class="nav-link px-6 py-4 text-white"
               >

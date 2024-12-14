@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GetResult, UserInfo } from "~/api/types";
+import type { UserInfo } from "~/api/types";
 
 const route = useRoute();
 const router = useRouter();
@@ -23,40 +23,44 @@ onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 
+const baseURL = process.env.BASE_URL;
+const token = useCookie("auth");
+
 // 取得用戶
-const authCookie = useCookie("auth");
+const authStore = useAuthStore();
+const { getAuth } = authStore;
+const user = ref<UserInfo>();
+
+// 驗證 token 是否正確
+if (token.value) {
+  try {
+    await $fetch("/user/check", {
+      method: "GET",
+      baseURL,
+      headers: {
+        Authorization: token.value,
+      },
+    });
+
+    user.value = await getAuth();
+  } catch (error) {
+    console.dir(error);
+    token.value = null; // 刪除 token
+    navigateTo("/account/login", { redirectCode: 302 });
+  }
+}
+
+// 取得簡易用戶名稱
 const username = ref("");
-const userId = ref("");
-if (authCookie.value) {
-  const baseURL = process.env.BASE_URL;
-  const { data: user } = await useFetch<GetResult<UserInfo>>(`/user/`, {
-    method: "GET",
-    baseURL,
-    headers: {
-      Authorization: authCookie.value!,
-    },
-    onResponseError({ response }) {
-      authCookie.value = null; // 清除 token
-      console.error(response._data.message);
-    },
-  });
-
-  // 取得用戶名稱
-  if (user.value?.result.name) {
-    const spiltName = user.value?.result.name.split(" ");
-    username.value = spiltName[0];
-  }
-
-  // 取得用戶 ID
-  if (user.value?.result._id) {
-    userId.value = user.value.result._id;
-  }
+if (user.value?.name) {
+  const splitName = user.value.name.split(" ");
+  username.value = splitName[0];
 }
 
 // 登出
 const { sweetAlert } = useSweetAlert();
 const logout = () => {
-  authCookie.value = null; // 清除 token
+  token.value = null; // 清除 token
   sweetAlert("success", "登出成功");
   router.push("/");
 };
@@ -95,7 +99,7 @@ const logout = () => {
                 客房旅宿
               </NuxtLink>
             </li>
-            <li v-if="authCookie" class="nav-item dropdown">
+            <li v-if="token" class="nav-item dropdown">
               <button
                 type="button"
                 class="nav-link d-flex gap-2 p-4 text-neutral-0 mx-auto"
@@ -111,7 +115,7 @@ const logout = () => {
               >
                 <li>
                   <NuxtLink
-                    :to="`/user/${userId}/profile`"
+                    :to="`/user/${user?._id}/profile`"
                     class="dropdown-item px-6 py-4"
                   >
                     我的帳戶

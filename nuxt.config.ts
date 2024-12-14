@@ -23,6 +23,9 @@ export default defineNuxtConfig({
       },
     },
   },
+  imports: {
+    dirs: ["stores"],
+  },
   modules: [
     "@nuxt/icon",
     "nuxt-swiper",

@@ -11,6 +11,7 @@ const modules = ref([Pagination]);
 
 const baseURL = process.env.BASE_URL;
 const token = useCookie("auth");
+const { formatter } = useDayjs();
 
 const allOrdersList = ref<Order[]>();
 const recentlyOrdersList = ref<Order[]>();
@@ -65,15 +66,10 @@ onMounted(async () => {
         (a, b) =>
           Number(new Date(b.checkInDate)) - Number(new Date(a.checkInDate))
       );
+  } else {
+    recentlyOrdersList.value = [];
+    pastOrdersList.value = [];
   }
-});
-
-// 使用 Intl.DateTimeFormat 轉變日期字串
-const formatter = new Intl.DateTimeFormat("zh-TW", {
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  weekday: "long",
 });
 
 // 刪除單筆訂單
@@ -180,18 +176,12 @@ useSeoMeta({
 
                   <div class="text-neutral-80 fs-8 fs-md-7 fw-bold">
                     <p class="title-deco mb-2">
-                      入住：{{
-                        formatter
-                          .format(new Date(recentlyOrder.checkInDate!))
-                          .slice(5)
-                      }}，15:00 可入住
+                      入住：{{ formatter(recentlyOrder.checkInDate) }}，15:00
+                      可入住
                     </p>
                     <p class="title-deco mb-0">
-                      退房：{{
-                        formatter
-                          .format(new Date(recentlyOrder.checkOutDate!))
-                          .slice(5)
-                      }}，12:00 前退房
+                      退房：{{ formatter(recentlyOrder.checkOutDate) }}，12:00
+                      前退房
                     </p>
                   </div>
 
@@ -321,16 +311,12 @@ useSeoMeta({
                   <div class="text-neutral-80 fs-8 fs-md-7 fw-medium">
                     <p class="title-deco mb-2">
                       入住：
-                      {{
-                        formatter.format(new Date(item.checkInDate!)).slice(5)
-                      }}
+                      {{ formatter(item.checkInDate) }}
                       ，15:00 可入住
                     </p>
                     <p class="title-deco mb-0">
                       退房：
-                      {{
-                        formatter.format(new Date(item.checkOutDate!)).slice(5)
-                      }}
+                      {{ formatter(item.checkInDate) }}
                       ，12:00 前退房
                     </p>
                   </div>

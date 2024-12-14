@@ -3,6 +3,7 @@ import type { FormContext } from "vee-validate";
 import { getRoomById, getRooms } from "~/api/rooms";
 import type { GetResult, Order, UserInfo } from "~/api/types";
 import { useThousands } from "~/composables/useThousands";
+import ZipCodeMap from "~/data/zipCodeMap";
 
 interface FormValues {
   name: string;
@@ -21,19 +22,10 @@ const isLoading = ref(false);
 const bookingStore = useBookingStore();
 const { bookingDate, bookingPeople, daysCount } = storeToRefs(bookingStore);
 
-// 使用 Intl.DateTimeFormat 轉變日期字串
-const formatter = new Intl.DateTimeFormat("zh-TW", {
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  weekday: "long",
-});
-const formattedDateStart = formatter.format(
-  new Date(bookingDate.value.date.start)
-);
-const formattedDateEnd = formatter.format(
-  new Date(bookingDate.value.date.end!)
-);
+// 轉變日期字串
+const { formatter } = useDayjs();
+const formattedDateStart = ref(formatter(bookingDate.value.date.start));
+const formattedDateEnd = ref(formatter(bookingDate.value.date.end));
 
 // 取得全部房型
 const { data: roomsList } = await useAsyncData("rooms", () => getRooms());
@@ -62,8 +54,9 @@ const showPeopleEdit = () => {
 };
 
 // 初始化台灣縣市二級選單 plugin tw-city-selector
-const selectedCounty = ref("");
-const selectedDistrict = ref("");
+const selectedCounty = ref("臺北市");
+const selectedDistrict = ref("中正區");
+const zpCodeRef = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
   const { $twCitySelector } = useNuxtApp();
@@ -75,56 +68,93 @@ onMounted(() => {
     elZipcode: ".zipcode",
     hasZipcode: true,
     hiddenZipcode: true,
+    countyValue: selectedCounty.value, // 預設城市
+    districtValue: selectedDistrict.value, // 預設地區
   });
 });
+
+const baseURL = process.env.BASE_URL;
+const token = useCookie("auth");
+
+// 取得用戶
+const authStore = useAuthStore();
+const { getAuth } = authStore;
+const user = ref<UserInfo>();
+
+// 驗證 token 是否正確
+if (token.value) {
+  try {
+    await $fetch("/user/check", {
+      method: "GET",
+      baseURL,
+      headers: {
+        Authorization: token.value,
+      },
+    });
+
+    user.value = await getAuth();
+  } catch (error) {
+    console.dir(error);
+    token.value = null; // 刪除 token
+    navigateTo("/account/login", { redirectCode: 302 });
+  }
+}
+
+// 會員初始資料
+let userInfo = {
+  name: "",
+  phone: "",
+  email: "",
+  address: {
+    zipcode: "",
+    detail: "",
+  },
+};
+
+// 套用會員資料
+const handleUserData = () => {
+  if (user.value) {
+    userInfo.name = user.value?.name!;
+    userInfo.phone = user.value?.phone!;
+    userInfo.email = user.value?.email!;
+    userInfo.address.zipcode = user.value?.address.zipcode!;
+    userInfo.address.detail = user.value?.address.detail!;
+
+    selectedCounty.value = ZipCodeMap.find(
+      (item) => item.zipcode === Number(user?.value?.address.zipcode)
+    )?.city!;
+    selectedDistrict.value = ZipCodeMap.find(
+      (item) => item.zipcode === Number(user?.value?.address.zipcode)
+    )?.county!;
+    zpCodeRef.value!.value = user.value?.address.zipcode!;
+  } else {
+    router.push("/account/login");
+  }
+};
 
 // 表單送出隱藏按鈕
 const submitButtonRef = ref<HTMLButtonElement | null>(null);
 const confirmBooking = () => {
-  submitButtonRef.value?.click();
+  // 沒登入就導到登入頁
+  if (user.value) {
+    submitButtonRef.value?.click();
+  } else {
+    router.push("/account/login");
+  }
 };
 
-// 檢查用戶是否登入
-const authCookie = useCookie("auth");
-const baseURL = process.env.BASE_URL;
-const user = ref<UserInfo>();
-if (authCookie.value) {
-  const { data } = await useFetch<GetResult<UserInfo>>(`/user/`, {
-    method: "GET",
-    baseURL,
-    headers: {
-      Authorization: authCookie.value!,
-    },
-    onResponseError({ response }) {
-      authCookie.value = null; // 清除 token
-    },
-  });
-
-  // 取得用戶
-  if (data.value) {
-    user.value = data.value.result;
-  }
-}
-
+// 送出表單
 const onSubmit = async (
   data: any,
   { resetForm }: Pick<FormContext<FormValues>, "resetForm">
 ) => {
-  // 沒登入就導到登入頁
-  if (!user.value) return navigateTo("/account/login");
-
-  // 取得 zipcode
-  const selectedZipcode = (
-    document.querySelector(".zipcode") as HTMLInputElement
-  ).value;
-
-  const userInfo = {
+  userInfo = {
     name: data.name,
     phone: data.phone,
     email: data.email,
     address: {
-      zipcode: selectedZipcode,
-      detail: `${selectedCounty.value}${selectedDistrict.value}${data.detail}`,
+      zipcode: zpCodeRef.value?.value!,
+      detail: data.detail,
     },
   };
 
@@ -144,7 +174,7 @@ const onSubmit = async (
       baseURL,
       body,
       headers: {
-        Authorization: authCookie.value || "",
+        Authorization: token.value || "",
       },
       onResponseError({ response }) {
         const { message } = response._data;
@@ -158,9 +188,6 @@ const onSubmit = async (
   } finally {
     isLoading.value = false;
   }
-
-  // 從第二個參數取出 resetForm 方法來重置表單
-  resetForm();
 };
 
 // seo
@@ -228,12 +255,8 @@ useSeoMeta({
                 >
                   <div>
                     <h3 class="title-deco mb-2 fs-7 fw-bold">訂房日期</h3>
-                    <p class="mb-2 fw-medium">
-                      入住：{{ formattedDateStart.slice(5) }}
-                    </p>
-                    <p class="mb-0 fw-medium">
-                      退房：{{ formattedDateEnd.slice(5) }}
-                    </p>
+                    <p class="mb-2 fw-medium">入住：{{ formattedDateStart }}</p>
+                    <p class="mb-0 fw-medium">退房：{{ formattedDateEnd }}</p>
                   </div>
                   <button
                     class="bg-transparent border-0 fw-bold text-decoration-underline"
@@ -285,6 +308,7 @@ useSeoMeta({
                 <button
                   class="text-primary-100 bg-transparent border-0 fw-bold text-decoration-underline"
                   type="button"
+                  @click="handleUserData"
                 >
                   套用會員資料
                 </button>
@@ -307,6 +331,7 @@ useSeoMeta({
                     :class="{ 'is-invalid': errors['name'] }"
                     placeholder="請輸入姓名"
                     rules="required|min:2"
+                    v-model="userInfo.name"
                   />
                   <VeeErrorMessage class="invalid-feedback" name="name" />
                 </div>
@@ -323,6 +348,7 @@ useSeoMeta({
                     :class="{ 'is-invalid': errors['phone'] }"
                     placeholder="請輸入手機號碼"
                     rules="required|isPhone"
+                    v-model="userInfo.phone"
                   />
                   <VeeErrorMessage class="invalid-feedback" name="phone" />
                 </div>
@@ -339,6 +365,7 @@ useSeoMeta({
                     :class="{ 'is-invalid': errors['email'] }"
                     placeholder="請輸入電子信箱"
                     rules="required|email"
+                    v-model="userInfo.email"
                   />
                   <VeeErrorMessage class="invalid-feedback" name="email" />
                 </div>
@@ -367,17 +394,19 @@ useSeoMeta({
                       class="zipcode form-select w-50 p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3 d-none"
                       type="text"
                       placeholder="郵遞區號"
+                      ref="zpCodeRef"
                       readOnly
                     />
                   </div>
                   <VeeField
-                    id="road"
+                    id="address"
                     name="detail"
                     type="text"
                     class="form-control p-4 fs-8 fs-md-7 rounded-3"
                     :class="{ 'is-invalid': errors['detail'] }"
                     placeholder="請輸入詳細地址"
                     rules="required"
+                    v-model="userInfo.address.detail"
                   />
                   <VeeErrorMessage class="invalid-feedback" name="detail" />
                 </div>

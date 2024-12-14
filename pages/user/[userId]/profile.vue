@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import dayjs from "dayjs";
 import type { FormContext } from "vee-validate";
-import type { GetResult, UserInfo } from "~/api/types";
+import type { UserInfo } from "~/api/types";
 import ZipCodeMap from "~/data/zipCodeMap";
 
 interface PasswordData {
@@ -20,26 +19,14 @@ const isEditProfile = ref(false);
 
 const years = new Date().getFullYear() - 1910;
 
-// 取得用戶
 const authCookie = useCookie("auth");
 const baseURL = process.env.BASE_URL;
+
+// 取得用戶
+const authStore = useAuthStore();
+const { getAuth } = authStore;
 const user = ref<UserInfo>();
-
-if (authCookie.value) {
-  const res = await $fetch<GetResult<UserInfo>>("/user/", {
-    method: "GET",
-    baseURL,
-    headers: {
-      Authorization: authCookie.value!,
-    },
-    onResponseError({ response }) {
-      authCookie.value = null; // 清除 token
-      console.error(response._data.message);
-    },
-  });
-
-  user.value = res.result;
-}
+user.value = await getAuth();
 
 const passwordForm = ref({
   oldPassword: "",
@@ -88,7 +75,9 @@ const onChangePassWord = async (
   }
 };
 
-const birthday = ref(dayjs(user.value?.birthday).format("YYYY 年 MM 月 DD 日"));
+// 日期轉換格式
+const { formatterYearToDate } = useDayjs();
+const birthday = ref(formatterYearToDate(user.value?.birthday!));
 
 // 出生年
 const userBirthYear = birthday.value.slice(0, 6);
@@ -405,7 +394,6 @@ useSeoMeta({
                 'fw-bold text-neutral-100': isEditProfile,
                 'fw-medium text-neutral-80': !isEditProfile,
               }"
-              for="birth"
             >
               生日
             </label>
@@ -413,7 +401,7 @@ useSeoMeta({
               class="form-control pe-none p-0 text-neutral-100 fw-bold border-0"
               :class="{ 'd-none': isEditProfile }"
             >
-              {{ dayjs(user?.birthday).format("YYYY 年 MM 月 DD 日") }}
+              {{ formatterYearToDate(user?.birthday!) }}
             </span>
             <div class="d-flex gap-2" :class="{ 'd-none': !isEditProfile }">
               <div class="w-50">
@@ -492,7 +480,6 @@ useSeoMeta({
                 'fw-bold text-neutral-100': isEditProfile,
                 'fw-medium text-neutral-80': !isEditProfile,
               }"
-              for="address"
             >
               地址
             </label>
