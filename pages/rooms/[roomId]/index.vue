@@ -14,7 +14,6 @@ const MAX_BOOKING_PEOPLE = 4;
 // pinia
 const bookingStore = useBookingStore();
 const { bookingDate, bookingPeople, daysCount } = storeToRefs(bookingStore);
-// const { setStartDate, setEndDate, setDaysCount } = bookingStore;
 
 const daysFormatOnMobile = (date: string) =>
   date?.split("-").slice(1, 3).join(" / ");
@@ -27,10 +26,6 @@ const handleDateChange = (bookingInfo: any) => {
 
   bookingPeople.value = bookingInfo?.people || 1;
   daysCount.value = bookingInfo.daysCount.value;
-
-  // setStartDate(start);
-  // setEndDate(end);
-  // setDaysCount(bookingInfo.daysCount.value);
 };
 
 // 取得詳細房型

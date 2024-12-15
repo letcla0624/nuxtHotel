@@ -100,9 +100,14 @@ const confirmDate = () => {
   closeModal();
 };
 
+const { formatterDate } = useDayjs();
 const clearDate = () => {
-  tempDate.date.start = null;
-  tempDate.date.end = null;
+  // 還原當前日期
+  tempDate.date.start = formatterDate(new Date());
+  tempDate.date.end = formatterDate(
+    new Date(new Date().setDate(new Date().getDate() + 1))
+  );
+
   tempDate.key++;
 };
 </script>

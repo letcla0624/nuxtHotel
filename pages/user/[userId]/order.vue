@@ -273,75 +273,78 @@ useSeoMeta({
           </swiper>
         </ClientOnly>
       </div>
-      <div class="col-12 col-md-5">
-        <div
-          v-if="pastOrdersList?.length !== 0"
-          class="rounded-3xl d-flex flex-column gap-6 gap-md-10 p-4 p-md-10 bg-neutral-0"
-        >
-          <h2 class="mb-0 text-neutral-100 fs-7 fs-md-5 fw-bold">歷史訂單</h2>
+      <template v-if="allOrdersList">
+        <div class="col-12 col-md-5">
+          <div
+            v-if="pastOrdersList?.length !== 0"
+            class="rounded-3xl d-flex flex-column gap-6 gap-md-10 p-4 p-md-10 bg-neutral-0"
+          >
+            <h2 class="mb-0 text-neutral-100 fs-7 fs-md-5 fw-bold">歷史訂單</h2>
 
-          <div class="passOrders">
-            <div v-for="item in pastOrdersList" :key="item._id" class="order">
-              <div class="d-flex flex-column flex-lg-row gap-6">
-                <img
-                  class="img-fluid object-fit-cover rounded-3"
-                  style="max-width: 120px; height: 80px"
-                  :src="item.roomId?.imageUrl"
-                  :alt="item.roomId?.name"
-                />
-                <section class="d-flex flex-column gap-4">
-                  <p class="mb-0 text-neutral-80 fs-8 fs-md-7 fw-medium">
-                    預訂參考編號： {{ item._id }}
-                  </p>
-
-                  <h3
-                    class="d-flex align-items-center mb-0 text-neutral-80 fs-8 fs-md-6 fw-bold"
-                  >
-                    {{ item.roomId?.name }}
-                  </h3>
-
-                  <div class="text-neutral-80 fw-medium">
-                    <p class="mb-2">
-                      住宿天數：
-                      {{ useDaysCount(item.checkInDate, item.checkOutDate) }} 晚
+            <div class="passOrders">
+              <div v-for="item in pastOrdersList" :key="item._id" class="order">
+                <div class="d-flex flex-column flex-lg-row gap-6">
+                  <img
+                    class="img-fluid object-fit-cover rounded-3"
+                    style="max-width: 120px; height: 80px"
+                    :src="item.roomId?.imageUrl"
+                    :alt="item.roomId?.name"
+                  />
+                  <section class="d-flex flex-column gap-4">
+                    <p class="mb-0 text-neutral-80 fs-8 fs-md-7 fw-medium">
+                      預訂參考編號： {{ item._id }}
                     </p>
-                    <p class="mb-0">住宿人數：{{ item.peopleNum }} 位</p>
-                  </div>
 
-                  <div class="text-neutral-80 fs-8 fs-md-7 fw-medium">
-                    <p class="title-deco mb-2">
-                      入住：
-                      {{ formatter(item.checkInDate) }}
-                      ，15:00 可入住
+                    <h3
+                      class="d-flex align-items-center mb-0 text-neutral-80 fs-8 fs-md-6 fw-bold"
+                    >
+                      {{ item.roomId?.name }}
+                    </h3>
+
+                    <div class="text-neutral-80 fw-medium">
+                      <p class="mb-2">
+                        住宿天數：
+                        {{ useDaysCount(item.checkInDate, item.checkOutDate) }}
+                        晚
+                      </p>
+                      <p class="mb-0">住宿人數：{{ item.peopleNum }} 位</p>
+                    </div>
+
+                    <div class="text-neutral-80 fs-8 fs-md-7 fw-medium">
+                      <p class="title-deco mb-2">
+                        入住：
+                        {{ formatter(item.checkInDate) }}
+                        ，15:00 可入住
+                      </p>
+                      <p class="title-deco mb-0">
+                        退房：
+                        {{ formatter(item.checkOutDate) }}
+                        ，12:00 前退房
+                      </p>
+                    </div>
+                    <p class="mb-0 text-neutral-80 fs-8 fs-md-7 fw-bold">
+                      NT$
+                      {{
+                        useThousands(
+                          item.roomId?.price! *
+                            useDaysCount(item.checkInDate, item.checkOutDate)
+                        )
+                      }}
                     </p>
-                    <p class="title-deco mb-0">
-                      退房：
-                      {{ formatter(item.checkInDate) }}
-                      ，12:00 前退房
-                    </p>
-                  </div>
-                  <p class="mb-0 text-neutral-80 fs-8 fs-md-7 fw-bold">
-                    NT$
-                    {{
-                      useThousands(
-                        item.roomId?.price! *
-                          useDaysCount(item.checkInDate, item.checkOutDate)
-                      )
-                    }}
-                  </p>
-                </section>
+                  </section>
+                </div>
               </div>
             </div>
+            <button
+              class="btn btn-outline-primary-100 py-4 fw-bold"
+              style="--bs-btn-hover-color: #fff"
+              type="button"
+            >
+              查看更多
+            </button>
           </div>
-          <button
-            class="btn btn-outline-primary-100 py-4 fw-bold"
-            style="--bs-btn-hover-color: #fff"
-            type="button"
-          >
-            查看更多
-          </button>
         </div>
-      </div>
+      </template>
     </div>
 
     <div id="cancelModal" class="modal fade" tabindex="-1">

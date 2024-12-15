@@ -2,6 +2,7 @@
 import type { FormContext } from "vee-validate";
 import { getRoomById, getRooms } from "~/api/rooms";
 import type { GetResult, Order, UserInfo } from "~/api/types";
+import DatePickerModal from "~/components/rooms/DatePickerModal.vue";
 import { useThousands } from "~/composables/useThousands";
 import ZipCodeMap from "~/data/zipCodeMap";
 
@@ -21,57 +22,6 @@ const isLoading = ref(false);
 
 const bookingStore = useBookingStore();
 const { bookingDate, bookingPeople, daysCount } = storeToRefs(bookingStore);
-
-// 轉變日期字串
-const { formatter } = useDayjs();
-const formattedDateStart = ref(formatter(bookingDate.value.date.start));
-const formattedDateEnd = ref(formatter(bookingDate.value.date.end));
-
-// 取得全部房型
-const { data: roomsList } = await useAsyncData("rooms", () => getRooms());
-
-// 取得詳細房間資訊
-const roomId = route.params.roomId as string;
-const { data: room } = await useAsyncData("room", () => getRoomById(roomId));
-
-// 改變房型
-const roomName = ref(room.value?.name);
-const showRoomEdit = ref(false);
-const editRoomHandler = () => {
-  showRoomEdit.value = !showRoomEdit.value;
-};
-const changeRoom = (e: Event) => {
-  const select = e.target as HTMLSelectElement;
-  const selectedOption = select.options[select.selectedIndex];
-  const dataId = selectedOption.getAttribute("data-id");
-  router.push(`/rooms/${dataId}/booking`);
-};
-
-// 改變人數
-const showPeople = ref(false);
-const showPeopleEdit = () => {
-  showPeople.value = !showPeople.value;
-};
-
-// 初始化台灣縣市二級選單 plugin tw-city-selector
-const selectedCounty = ref("臺北市");
-const selectedDistrict = ref("中正區");
-const zpCodeRef = ref<HTMLInputElement | null>(null);
-
-onMounted(() => {
-  const { $twCitySelector } = useNuxtApp();
-  new $twCitySelector({
-    el: ".city-selector-set",
-    standardWords: true,
-    elCounty: ".county",
-    elDistrict: ".district",
-    elZipcode: ".zipcode",
-    hasZipcode: true,
-    hiddenZipcode: true,
-    countyValue: selectedCounty.value, // 預設城市
-    districtValue: selectedDistrict.value, // 預設地區
-  });
-});
 
 const baseURL = process.env.BASE_URL;
 const token = useCookie("auth");
@@ -111,6 +61,83 @@ let userInfo = {
   },
 };
 
+// 日期 Modal
+const datePickerModal = ref<InstanceType<typeof DatePickerModal> | null>(null);
+const openModal = () => {
+  datePickerModal.value?.openModal();
+};
+
+const handleDateChange = (bookingInfo: any) => {
+  // 要注意 bookingInfo 的結構
+  const { start, end } = bookingInfo.date;
+  bookingDate.value.date.start = start;
+  bookingDate.value.date.end = end;
+
+  bookingPeople.value = bookingInfo?.people || 1;
+  daysCount.value = bookingInfo.daysCount.value;
+};
+
+// 轉變日期字串
+const { formatter, formatterDate } = useDayjs();
+
+// 取得全部房型
+const { data: roomsList } = await useAsyncData("rooms", () => getRooms());
+
+// 取得詳細房間資訊
+const roomId = route.params.roomId as string;
+const { data: room } = await useAsyncData("room", () => getRoomById(roomId));
+
+// 改變房型
+const roomName = ref(room.value?.name);
+const showRoomEdit = ref(false);
+const editRoomHandler = () => {
+  showRoomEdit.value = !showRoomEdit.value;
+};
+const changeRoom = (e: Event) => {
+  const select = e.target as HTMLSelectElement;
+  const selectedOption = select.options[select.selectedIndex];
+  const dataId = selectedOption.getAttribute("data-id");
+  router.push(`/rooms/${dataId}/booking`);
+};
+
+// 改變人數
+const showPeople = ref(false);
+const showPeopleEdit = () => {
+  showPeople.value = !showPeople.value;
+};
+
+// 地址
+const selectedCounty = ref("臺北市");
+const selectedDistrict = ref("中正區");
+const zpCodeRef = ref<HTMLInputElement | null>(null);
+const countyRef = ref<HTMLSelectElement | null>(null);
+const districtRef = ref<HTMLSelectElement | null>(null);
+
+onMounted(() => {
+  // 初始化台灣縣市二級選單 plugin tw-city-selector
+  const { $twCitySelector } = useNuxtApp();
+  new $twCitySelector({
+    el: ".city-selector-set",
+    standardWords: true,
+    elCounty: ".county",
+    elDistrict: ".district",
+    elZipcode: ".zipcode",
+    hasZipcode: true,
+    hiddenZipcode: true,
+    countyValue: selectedCounty.value, // 預設城市
+    districtValue: selectedDistrict.value, // 預設地區
+  });
+});
+
+// 判斷有無登入，未登入須先登入
+const { sweetAlert } = useSweetAlert();
+const loginFn = () => {
+  sweetAlert("info", "請先登入", "2 秒後將自動跳轉到登入頁");
+  setTimeout(() => {
+    router.push("/account/login");
+  }, 2000);
+};
+
 // 套用會員資料
 const handleUserData = () => {
   if (user.value) {
@@ -127,8 +154,26 @@ const handleUserData = () => {
       (item) => item.zipcode === Number(user?.value?.address.zipcode)
     )?.county!;
     zpCodeRef.value!.value = user.value?.address.zipcode!;
+
+    // 清空舊的選項，不然選單會重複
+    if (countyRef.value) countyRef.value.innerHTML = "";
+    if (districtRef.value) districtRef.value.innerHTML = "";
+
+    // 重新初始化台灣縣市二級選單 tw-city-selector，不然值無法變更
+    const { $twCitySelector } = useNuxtApp();
+    new $twCitySelector({
+      el: ".city-selector-set",
+      standardWords: true,
+      elCounty: ".county",
+      elDistrict: ".district",
+      elZipcode: ".zipcode",
+      hasZipcode: true,
+      hiddenZipcode: true,
+      countyValue: selectedCounty.value, // 更新預設城市
+      districtValue: selectedDistrict.value, // 更新預設地區
+    });
   } else {
-    router.push("/account/login");
+    loginFn();
   }
 };
 
@@ -139,7 +184,7 @@ const confirmBooking = () => {
   if (user.value) {
     submitButtonRef.value?.click();
   } else {
-    router.push("/account/login");
+    loginFn();
   }
 };
 
@@ -182,7 +227,17 @@ const onSubmit = async (
       },
     });
 
-    router.push(`/booking/confirmation/${res.result._id}`);
+    // 還原當前日期
+    bookingDate.value.date.start = formatterDate(new Date());
+    bookingDate.value.date.end = formatterDate(
+      new Date(new Date().setDate(new Date().getDate() + 1))
+    );
+
+    // 還原初始人數
+    bookingPeople.value = 1;
+
+    // 沒有 await 會有奇怪的短暫停留時間
+    await router.push(`/booking/confirmation/${res.result._id}`);
   } catch (error) {
     console.log(error);
   } finally {
@@ -255,12 +310,17 @@ useSeoMeta({
                 >
                   <div>
                     <h3 class="title-deco mb-2 fs-7 fw-bold">訂房日期</h3>
-                    <p class="mb-2 fw-medium">入住：{{ formattedDateStart }}</p>
-                    <p class="mb-0 fw-medium">退房：{{ formattedDateEnd }}</p>
+                    <p class="mb-2 fw-medium">
+                      入住：{{ formatter(bookingDate.date.start) }}
+                    </p>
+                    <p class="mb-0 fw-medium">
+                      退房：{{ formatter(bookingDate.date.end) }}
+                    </p>
                   </div>
                   <button
                     class="bg-transparent border-0 fw-bold text-decoration-underline"
                     type="button"
+                    @click="openModal"
                   >
                     編輯
                   </button>
@@ -279,10 +339,13 @@ useSeoMeta({
                       aria-label="Default select example"
                       v-model="bookingPeople"
                     >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
+                      <option
+                        v-for="people in room?.maxPeople"
+                        :key="people"
+                        :value="people"
+                      >
+                        {{ people }}
+                      </option>
                     </select>
                   </div>
                   <button
@@ -380,6 +443,7 @@ useSeoMeta({
                         id="county"
                         class="county form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
                         v-model="selectedCounty"
+                        ref="countyRef"
                       />
                     </div>
                     <div class="w-50">
@@ -387,6 +451,7 @@ useSeoMeta({
                         id="district"
                         class="district form-select p-4 text-neutral-80 fs-8 fs-md-7 fw-medium rounded-3"
                         v-model="selectedDistrict"
+                        ref="districtRef"
                       />
                     </div>
                     <input
@@ -612,6 +677,12 @@ useSeoMeta({
         </div>
       </div>
     </section>
+
+    <DatePickerModal
+      ref="datePickerModal"
+      :date-time="bookingDate"
+      @handle-date-change="handleDateChange"
+    />
 
     <RoomsBookingLoading v-if="isLoading" />
   </main>

@@ -21,31 +21,9 @@ export const useBookingStore = defineStore("booking", () => {
   // 預定人數
   const bookingPeople = ref(1);
 
-  // const sessionData = useSessionStorage("bookingData", {
-  //   startDate: "",
-  //   endDate: "",
-  //   daysCount: 1,
-  // });
-
-  // const setStartDate = (date: string) => {
-  //   sessionData.value.startDate = date;
-  // };
-
-  // const setEndDate = (date: string) => {
-  //   sessionData.value.endDate = date;
-  // };
-
-  // const setDaysCount = (date: number) => {
-  //   sessionData.value.daysCount = date;
-  // };
-
   return {
     bookingDate,
     bookingPeople,
     daysCount,
-    // sessionData,
-    // setStartDate,
-    // setEndDate,
-    // setDaysCount,
   };
 });

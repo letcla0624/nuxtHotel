@@ -17,9 +17,26 @@ const isDisabled = ref(false);
 // 使用 composable
 const { sweetAlert } = useSweetAlert();
 
+// 記住帳號
+const rememberRef = ref<HTMLInputElement | null>(null);
+const rememberChecked = ref(false);
 const loginForm = ref({
   email: "",
   password: "",
+});
+
+const onRemember = () => {
+  rememberChecked.value = !rememberChecked.value;
+};
+
+onMounted(() => {
+  if (localStorage.getItem("userEmail")) {
+    loginForm.value.email = localStorage.getItem("userEmail")!;
+    rememberChecked.value = true;
+  } else {
+    loginForm.value.email = "";
+    rememberChecked.value = false;
+  }
 });
 
 // 登入
@@ -51,6 +68,13 @@ const onSubmit = async (
     console.error(error);
   } finally {
     isDisabled.value = false;
+
+    // 記住帳號到本地
+    if (rememberChecked.value) {
+      localStorage.setItem("userEmail", body.email);
+    } else {
+      localStorage.removeItem("userEmail");
+    }
   }
 };
 
@@ -105,7 +129,14 @@ useSeoMeta({
         class="d-flex justify-content-between align-items-center mb-10 fs-8 fs-md-7"
       >
         <div class="form-check d-flex align-items-end gap-2 text-neutral-0">
-          <input id="remember" class="form-check-input" type="checkbox" />
+          <input
+            id="remember"
+            class="form-check-input"
+            type="checkbox"
+            ref="rememberRef"
+            @click="onRemember"
+            :checked="rememberChecked"
+          />
           <label class="form-check-label fw-bold" for="remember">
             記住帳號
           </label>
@@ -150,11 +181,6 @@ $grid-breakpoints: (
   xxl: 1400px,
   xxxl: 1537px,
 );
-
-// input[type="password"] {
-//   font: small-caption;
-//   font-size: 1.5rem;
-// }
 
 input::placeholder {
   color: #909090;

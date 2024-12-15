@@ -269,7 +269,7 @@ useSeoMeta({
           <VeeErrorMessage class="invalid-feedback" name="phone" />
         </div>
         <div class="mb-4 fs-8 fs-md-7">
-          <label class="mb-2 text-neutral-0 fw-bold" for="birth"> 生日 </label>
+          <label class="mb-2 text-neutral-0 fw-bold"> 生日 </label>
           <div class="d-flex gap-2">
             <div class="w-50">
               <VeeField
@@ -340,7 +340,7 @@ useSeoMeta({
           </div>
         </div>
         <div class="mb-4 fs-8 fs-md-7">
-          <label class="form-label text-neutral-0 fw-bold" for="address">
+          <label class="form-label text-neutral-0 fw-bold" for="detail">
             地址
           </label>
           <div>
