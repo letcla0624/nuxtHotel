@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { UserInfo } from "~/api/types";
-
 const route = useRoute();
 const router = useRouter();
 const transparentBgRoute = ["index", "rooms"];
@@ -23,46 +21,18 @@ onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 
-const baseURL = process.env.BASE_URL;
-const token = useCookie("auth");
-
 // 取得用戶
-const authStore = useAuthStore();
-const { getAuth } = authStore;
-const user = ref<UserInfo>();
-
-// 驗證 token 是否正確
-if (token.value) {
-  try {
-    await $fetch("/user/check", {
-      method: "GET",
-      baseURL,
-      headers: {
-        Authorization: token.value,
-      },
-    });
-
-    user.value = await getAuth();
-  } catch (error) {
-    console.dir(error);
-    token.value = null; // 刪除 token
-    navigateTo("/account/login", { redirectCode: 302 });
-  }
-}
-
-// 取得簡易用戶名稱
-const username = ref("");
-if (user.value?.name) {
-  const splitName = user.value.name.split(" ");
-  username.value = splitName[0];
-}
+const { user, username, token } = defineProps(["user", "username", "token"]);
 
 // 登出
 const { sweetAlert } = useSweetAlert();
 const logout = () => {
   token.value = null; // 清除 token
-  sweetAlert("success", "登出成功");
   router.push("/");
+
+  setTimeout(() => {
+    sweetAlert("success", "登出成功");
+  }, 1500);
 };
 </script>
 
@@ -122,13 +92,13 @@ const logout = () => {
                   </NuxtLink>
                 </li>
                 <li>
-                  <NuxtLink
-                    to="/"
+                  <button
+                    type="button"
                     class="dropdown-item px-6 py-4"
                     @click="logout"
                   >
                     登出
-                  </NuxtLink>
+                  </button>
                 </li>
               </ul>
             </li>

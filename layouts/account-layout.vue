@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 const route = useRoute();
 </script>
 
@@ -39,7 +39,6 @@ const route = useRoute();
                   class="nav-link d-flex gap-2 p-4 text-neutral-0"
                 >
                   <Icon class="fs-5" name="mdi:account-circle-outline" />
-                  Jessica
                 </NuxtLink>
               </li>
               <li class="d-md-none nav-item">
