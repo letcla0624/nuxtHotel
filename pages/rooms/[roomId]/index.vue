@@ -33,9 +33,17 @@ const roomId = route.params.roomId as string;
 const { data: room } = await useAsyncData("roomId", () => getRoomById(roomId));
 
 // seo
-const title = useMetaTitle("房型詳細");
+const requestURL = useRequestURL();
+const title = useMetaTitle(`${room.value?.name}`);
 useSeoMeta({
   title,
+  description: `${room.value?.description}`,
+  ogTitle: title,
+  ogDescription: `${room.value?.description}`,
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
+  ogImage: `${room.value?.smallImageUrl}`,
 });
 </script>
 

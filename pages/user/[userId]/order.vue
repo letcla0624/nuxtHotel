@@ -106,9 +106,16 @@ const deleteOrder = async () => {
 };
 
 // seo
-const title = useMetaTitle("訂單列表");
+const requestURL = useRequestURL();
+const title = useMetaTitle("我的訂單");
 useSeoMeta({
   title,
+  description: "顯示即將到來的行程和歷史訂單。",
+  ogTitle: title,
+  ogDescription: "顯示即將到來的行程和歷史訂單。",
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
 });
 </script>
 

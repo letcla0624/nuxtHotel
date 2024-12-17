@@ -194,9 +194,16 @@ const onChangeUserData = async (data: any) => {
 };
 
 // seo
+const requestURL = useRequestURL();
 const title = useMetaTitle("個人資料");
 useSeoMeta({
   title,
+  description: "查看和修改個人基本資料和密碼。",
+  ogTitle: title,
+  ogDescription: "查看和修改個人基本資料和密碼。",
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
 });
 </script>
 

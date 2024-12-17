@@ -35,7 +35,11 @@ if (user.value?.name) {
           <div
             class="hero-content d-flex flex-column flex-md-row justify-content-center justify-content-md-start align-items-md-center gap-4 gap-md-6 mx-5 my-10 mx-md-0 my-md-0"
           >
-            <img class="avatar" src="/images/avatar-6.png" alt="avatar" />
+            <img
+              class="avatar"
+              src="~@/public/images/avatar-6.png"
+              alt="avatar"
+            />
             <h1 class="text-neutral-0 fw-bold">Hello，{{ username }}</h1>
           </div>
         </div>

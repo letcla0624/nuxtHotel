@@ -38,7 +38,7 @@ if (user.value?.name) {
 
 <template>
   <div>
-    <AppHeader :user="user" :username="username" :token="token" />
+    <AppHeader :user="user" :username="username" />
     <slot />
     <AppFooter />
   </div>

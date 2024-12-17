@@ -246,9 +246,17 @@ const onSubmit = async (
 };
 
 // seo
-const title = useMetaTitle("預約房型");
+const requestURL = useRequestURL();
+const title = useMetaTitle("確認訂房資訊");
 useSeoMeta({
   title,
+  description: "確認預定房型，並填寫訂房人資訊。",
+  ogTitle: title,
+  ogDescription: "確認預定房型，並填寫訂房人資訊。",
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
+  ogImage: `${room.value?.smallImageUrl}`,
 });
 </script>
 

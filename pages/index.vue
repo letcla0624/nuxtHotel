@@ -33,6 +33,13 @@ const room = roomsList.value![0];
 
 // 取得最新消息
 const { data: foodsList } = await useAsyncData("foods", () => getFoods());
+
+// seo
+const requestURL = useRequestURL();
+useSeoMeta({
+  ogUrl: requestURL.href,
+  ogImage: `${requestURL.origin}${heroList[0].imageBig}`,
+});
 </script>
 
 <template>

@@ -22,9 +22,10 @@ onUnmounted(() => {
 });
 
 // 取得用戶
-const { user, username, token } = defineProps(["user", "username", "token"]);
+const { user, username } = defineProps(["user", "username"]);
 
 // 登出
+const token = useCookie("auth");
 const { sweetAlert } = useSweetAlert();
 const logout = () => {
   token.value = null; // 清除 token
@@ -48,7 +49,11 @@ const logout = () => {
     <nav class="navbar navbar-expand-md p-0 px-3 py-4 px-md-20 py-md-6">
       <div class="container-fluid justify-content-between p-0">
         <NuxtLink class="navbar-brand p-0" to="/">
-          <img src="/images/logo-white.svg" alt="logo" class="logo img-fluid" />
+          <img
+            src="~@/public/images/logo-white.svg"
+            alt="logo"
+            class="logo img-fluid"
+          />
         </NuxtLink>
         <button
           class="navbar-toggler collapsed p-2 text-white border-0 shadow-none"

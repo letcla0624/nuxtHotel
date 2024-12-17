@@ -10,9 +10,16 @@ const roomSwiper = ref<any | null>(null);
 const { data: roomsList } = await useAsyncData("rooms", () => getRooms());
 
 // seo
+const requestURL = useRequestURL();
 const title = useMetaTitle("客房旅宿");
 useSeoMeta({
   title,
+  description: "各種房型，任您挑選。",
+  ogTitle: title,
+  ogDescription: "各種房型，任您挑選。",
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
 });
 </script>
 

@@ -60,9 +60,17 @@ const totalPrice = computed(() =>
 );
 
 // seo
+const requestURL = useRequestURL();
 const title = useMetaTitle("預約成功");
 useSeoMeta({
   title,
+  description: "您已預訂成功，立即查看您的訂單紀錄。",
+  ogTitle: title,
+  ogDescription: "您已預訂成功，立即查看您的訂單紀錄。",
+  ogSiteName: title,
+  ogType: "website",
+  ogUrl: requestURL.href,
+  ogImage: `${order.value?.roomId?.smallImageUrl}`,
 });
 </script>
 

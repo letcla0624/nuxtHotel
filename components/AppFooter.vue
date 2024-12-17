@@ -7,7 +7,7 @@
         class="d-flex flex-column gap-10 gap-md-0 flex-md-row justify-content-md-between align-items-md-center mb-20"
       >
         <div>
-          <img class="mb-10" src="/images/logo-white.svg" alt="logo" />
+          <img class="mb-10" src="~@/public/images/logo-white.svg" alt="logo" />
           <div class="d-flex align-items-center gap-4">
             <NuxtLink
               class="text-neutral-0 border rounded-circle footer-icon"
