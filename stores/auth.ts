@@ -1,20 +1,21 @@
 import type { GetResult, UserInfo } from "~/api/types";
 
 export const useAuthStore = defineStore("auth", () => {
-  const token = useCookie("auth");
   const baseURL = process.env.BASE_URL;
+  const user = ref<UserInfo>();
+  const username = ref("");
 
   // 取得用戶
-  const getAuth = async () => {
+  const getAuth = async (token: string | null) => {
     try {
       const res = await $fetch<GetResult<UserInfo>>(`/user/`, {
         method: "GET",
         baseURL,
         headers: {
-          Authorization: token.value || "",
+          Authorization: token || "",
         },
         onResponseError({ response }) {
-          token.value = null; // 清除 token
+          token = null; // 清除 token
           console.error(response._data.message);
         },
       });
@@ -27,5 +28,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   return {
     getAuth,
+    user,
+    username,
   };
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormContext } from "vee-validate";
 import { getRoomById, getRooms } from "~/api/rooms";
-import type { GetResult, Order, UserInfo } from "~/api/types";
+import type { GetResult, Order } from "~/api/types";
 import DatePickerModal from "~/components/rooms/DatePickerModal.vue";
 import { useThousands } from "~/composables/useThousands";
 import ZipCodeMap from "~/data/zipCodeMap";
@@ -27,28 +27,7 @@ const baseURL = process.env.BASE_URL;
 const token = useCookie("auth");
 
 // 取得用戶
-const authStore = useAuthStore();
-const { getAuth } = authStore;
-const user = ref<UserInfo>();
-
-// 驗證 token 是否正確
-if (token.value) {
-  try {
-    await $fetch("/user/check", {
-      method: "GET",
-      baseURL,
-      headers: {
-        Authorization: token.value,
-      },
-    });
-
-    user.value = await getAuth();
-  } catch (error) {
-    console.dir(error);
-    token.value = null; // 刪除 token
-    navigateTo("/account/login", { redirectCode: 302 });
-  }
-}
+const { user } = await useGetUser();
 
 // 會員初始資料
 let userInfo = {

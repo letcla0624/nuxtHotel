@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { FormContext } from "vee-validate";
-import type { UserInfo } from "~/api/types";
 import ZipCodeMap from "~/data/zipCodeMap";
 
 interface PasswordData {
@@ -23,10 +22,7 @@ const authCookie = useCookie("auth");
 const baseURL = process.env.BASE_URL;
 
 // 取得用戶
-const authStore = useAuthStore();
-const { getAuth } = authStore;
-const user = ref<UserInfo>();
-user.value = await getAuth();
+const { user } = await useGetUser();
 
 const passwordForm = ref({
   oldPassword: "",
@@ -136,6 +132,12 @@ onMounted(() => {
   });
 });
 
+const userForm = ref({
+  name: user.value?.name,
+  phone: user.value?.phone,
+  detail: user.value?.address.detail,
+});
+
 // 更新用戶資料
 const onChangeUserData = async (data: any) => {
   const changeYear = data.userYear.slice(0, 4);
@@ -172,18 +174,8 @@ const onChangeUserData = async (data: any) => {
       },
     });
 
-    // 儲存用戶資料 (不這樣做無法雙向綁定)
-    user.value = {
-      ...user.value,
-      email: user.value?.email!,
-      name: body.name,
-      phone: body.phone,
-      birthday: `${body.birthday}`,
-      address: {
-        zipcode: `${zipCode}`,
-        detail: body.address.detail,
-      },
-    };
+    // 重新渲染用戶資料 (不這樣做資料無法變更)
+    await useGetUser();
 
     sweetAlert("success", "變更資料成功！");
     isEditProfile.value = false;
@@ -361,7 +353,7 @@ useSeoMeta({
               }"
               placeholder="請輸入姓名"
               rules="required|min:2"
-              :value="user?.name"
+              v-model="userForm.name"
             />
             <VeeErrorMessage class="invalid-feedback" name="name" />
           </div>
@@ -389,7 +381,7 @@ useSeoMeta({
               }"
               placeholder="請輸入手機號碼"
               rules="required|isPhone"
-              :value="user?.phone"
+              v-model="userForm.phone"
             />
             <VeeErrorMessage class="invalid-feedback" name="phone" />
           </div>
@@ -542,7 +534,7 @@ useSeoMeta({
                 }"
                 placeholder="請輸入詳細地址"
                 rules="required"
-                :value="user?.address.detail"
+                v-model="userForm.detail"
               />
               <VeeErrorMessage class="invalid-feedback" name="detail" />
             </div>

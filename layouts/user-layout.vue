@@ -1,22 +1,7 @@
-<script setup lang="ts">
-import type { UserInfo } from "~/api/types";
-
-// 取得用戶
-const authStore = useAuthStore();
-const { getAuth } = authStore;
-const user = ref<UserInfo>();
-user.value = await getAuth();
-
-// 取得簡易用戶名稱
-const username = ref("");
-if (user.value?.name) {
-  const splitName = user.value.name.split(" ");
-  username.value = splitName[0];
-}
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <NuxtLayout name="default">
+  <NuxtLayout name="default" #default="{ user, username }">
     <main class="pt-18 pt-md-30 bg-neutral-120">
       <section class="position-relative">
         <picture>
@@ -68,7 +53,7 @@ if (user.value?.name) {
             </li>
           </ul>
 
-          <slot />
+          <slot :user="user" :username="username" />
         </div>
       </section>
 

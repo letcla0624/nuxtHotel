@@ -30,10 +30,7 @@ const { sweetAlert } = useSweetAlert();
 const logout = () => {
   token.value = null; // 清除 token
   router.push("/");
-
-  setTimeout(() => {
-    sweetAlert("success", "登出成功");
-  }, 1500);
+  sweetAlert("success", "登出成功");
 };
 </script>
 
