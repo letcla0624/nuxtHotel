@@ -1,3 +1,8 @@
+interface CheckAuth {
+  status: boolean;
+  token: string;
+}
+
 export default async function useGetUser() {
   const { sweetAlert } = useSweetAlert();
 
@@ -10,7 +15,7 @@ export default async function useGetUser() {
 
   if (token.value) {
     try {
-      await $fetch("/user/check", {
+      await $fetch<CheckAuth>("/user/check", {
         method: "GET",
         baseURL,
         headers: {
