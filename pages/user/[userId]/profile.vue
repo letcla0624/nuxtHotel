@@ -18,7 +18,7 @@ const isEditProfile = ref(false);
 
 const years = new Date().getFullYear() - 1910;
 
-const authCookie = useCookie("auth");
+const token = useCookie("auth");
 const baseURL = process.env.BASE_URL;
 
 // 取得用戶
@@ -55,7 +55,7 @@ const onChangePassWord = async (
       baseURL,
       body,
       headers: {
-        Authorization: authCookie.value!,
+        Authorization: token.value!,
       },
       onResponseError({ response }) {
         console.error(response._data.message);
@@ -167,7 +167,7 @@ const onChangeUserData = async (data: any) => {
       baseURL,
       body,
       headers: {
-        Authorization: authCookie.value!,
+        Authorization: token.value!,
       },
       onResponseError({ response }) {
         console.error(response._data.message);

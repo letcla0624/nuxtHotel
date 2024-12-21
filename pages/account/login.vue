@@ -44,8 +44,9 @@ const onSubmit = async (
   body: any,
   { resetForm }: Pick<FormContext<Login>, "resetForm">
 ) => {
+  isDisabled.value = true;
+
   try {
-    isDisabled.value = true;
     const res = await login(body);
 
     // 將 token 寫入 cookie
